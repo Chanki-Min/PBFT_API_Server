@@ -10,6 +10,7 @@
 
     <modules>
         <module>Apiserver</module>
+        <module>PBFT</module>
     </modules>
 
 

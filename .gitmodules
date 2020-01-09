@@ -1,0 +1,4 @@
+[submodule "PBFT"]
+	path = PBFT
+	url = https://apl.hongik.ac.kr:5050/MOTIE/PBFT.git
+	branch = master
