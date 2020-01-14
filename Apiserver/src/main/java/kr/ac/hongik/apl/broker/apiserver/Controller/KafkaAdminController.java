@@ -18,7 +18,7 @@ public class KafkaAdminController {
 		/*
 		* 권한 인증이 필요하다면 인증 후에 현재 카프카 클러스터의 토픽 정보를 반환한다
 		*/
-		throw new NotImplementedException("구현합시다");
+		throw new NotImplementedException("카프카 클러스터 토픽 정보");
 	}
 
 	@RequestMapping(value = "/topic/create")
@@ -31,7 +31,6 @@ public class KafkaAdminController {
 		* ref) https://kafka.apache.org/23/javadoc/index.html?org/apache/kafka/clients/admin/AdminClient.html
 		* ref) https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/reference/html/#configuring-topics
 		*/
-		throw new NotImplementedException("구현합시다");
+		throw new NotImplementedException("생성된 토픽의 정보");
 	}
-
 }

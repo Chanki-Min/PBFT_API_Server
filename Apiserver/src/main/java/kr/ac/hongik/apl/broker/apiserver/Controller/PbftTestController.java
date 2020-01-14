@@ -1,12 +1,9 @@
 package kr.ac.hongik.apl.broker.apiserver.Controller;
 
 import kr.ac.hongik.apl.Client;
-import kr.ac.hongik.apl.ES.EsJsonParser;
 import kr.ac.hongik.apl.Messages.RequestMessage;
 import kr.ac.hongik.apl.Operations.Operation;
-import kr.ac.hongik.apl.Replica;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -17,7 +14,7 @@ import java.util.Properties;
 
 @Slf4j
 @Controller(value = "/pbft")
-public class pbftTestContriller {
+public class PbftTestController {
 
 	@RequestMapping(value = "/test")
 	@ResponseBody
