@@ -1,9 +1,12 @@
 package kr.ac.hongik.apl.broker.apiserver.Controller;
 
 import kr.ac.hongik.apl.Client;
+import kr.ac.hongik.apl.ES.EsRestClient;
 import kr.ac.hongik.apl.Messages.RequestMessage;
 import kr.ac.hongik.apl.Operations.Operation;
+import kr.ac.hongik.apl.broker.apiserver.Service.BlockChainVerifier;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -15,6 +18,8 @@ import java.util.Properties;
 @Slf4j
 @Controller(value = "/pbft")
 public class PbftTestController {
+	@Autowired
+	BlockChainVerifier blockChainVerifier;
 
 	@RequestMapping(value = "/test")
 	@ResponseBody
@@ -33,5 +38,12 @@ public class PbftTestController {
 		client.close();
 
 		return reply.greeting;
+	}
+
+	@RequestMapping(value = "/verify")
+	@ResponseBody
+	public String verify() throws NoSuchFieldException, EsRestClient.EsSSLException, IOException {
+		blockChainVerifier.verifyBlock();
+		return "";
 	}
 }
