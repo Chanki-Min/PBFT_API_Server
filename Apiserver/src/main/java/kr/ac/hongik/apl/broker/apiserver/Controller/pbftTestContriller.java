@@ -16,8 +16,8 @@ import java.io.InputStream;
 import java.util.Properties;
 
 @Slf4j
-@Controller
-public class SampleController {
+@Controller(value = "/pbft")
+public class pbftTestContriller {
 
 	@RequestMapping(value = "/test")
 	@ResponseBody
