@@ -23,7 +23,6 @@ public class KafkaProducerConfiguration {
 	private Environment env;
 
 	public Map<String, Object> producerConfigs() {
-
 		Map<String, Object> props = new HashMap<>();
 
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, env.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG));
