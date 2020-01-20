@@ -25,6 +25,8 @@ public class ExtractBlockIdFromResultService {
 	}
 
 	/**
+	 * Java stream api를 이용하여 elasticsearch 검색 결과에서 블록ID를 추출한다
+	 *
 	 * @param searchList elasticsearch에서 데이터를 쿼리하여 나온 raw result (json format)
 	 * @return list of blockId that need to be verified
 	 * @throws JsonProcessingException
