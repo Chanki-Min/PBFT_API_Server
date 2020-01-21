@@ -16,7 +16,7 @@ public interface ConsumingPbftClient extends InitializingBean, DisposableBean {
 	/**
 	 * 조건 만족시 실제 실행 로직은 여기에 작성한다
 	 */
-	public abstract void execute();
+	public abstract void execute(Object obj);
 
 	/**
 	 * AtomicBoolean과 Consumer.wakeup()을 통하여 thread-safe 하게 컨슈머를 종료합니다

@@ -1,14 +1,28 @@
 package kr.ac.hongik.apl.broker.apiserver.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.ac.hongik.apl.Blockchain.HashTree;
+import kr.ac.hongik.apl.Client;
+import kr.ac.hongik.apl.ES.EsRestClient;
+import kr.ac.hongik.apl.Messages.RequestMessage;
+import kr.ac.hongik.apl.Operations.InsertHeaderOperation;
+import kr.ac.hongik.apl.Operations.Operation;
+import kr.ac.hongik.apl.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,15 +35,27 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     public static final String MIN_BATCH_SIZE = "kafka.listener.service.minBatchSize";
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
+    //TODO : 이 값은 PBFT에 1차 해쉬도 삽입할지를 결정한다. 설정 값 또는 다른 방식으로 받을 필요가 있다.
+    private boolean isHashListInclude = true;
+    private int TIMEOUT_MILLIS = 5000;
+    private int POLL_INTERVAL_MILLIS = 1000;
+    private KafkaConsumer<String, Object> consumer = null;
+
     @Resource(name = "consumerConfigs")
     private Map<String, Object> consumerConfigs;
     @Resource(name = "ImmediateClientConfigs")
     private Map<String, Object> ImmediateServiceConfigs;
+    @Resource(name = "pbftClientProperties")
+    private Properties pbftClientProperties;
+    @Resource(name = "esRestClientConfigs")
+    public HashMap<String, Object> esRestClientConfigs;
 
     //Async 노테이션의 메소드는 this가 invoke()할 수 없기 때문에 비동기 실행만 시키는 서비스를 주입한다
     @Autowired
     private AsyncExecutionService asyncExecutionService;
-    private KafkaConsumer<String, Object> consumer = null;
+    @Autowired
+    private ObjectMapper objectMapper;
+
 
     public ImmediateConsumingPbftClient() {
     }
@@ -38,39 +64,36 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     @Async("consumerThreadPool")
     public void startConsumer() {
         try {
-            consumerConfigs.replace(ConsumerConfig.GROUP_ID_CONFIG,"lee2");
+            //consumerConfigs.replace(ConsumerConfig.GROUP_ID_CONFIG,"lee2");
             log.info("Start ConsumingPbftClientBuffer service");
             consumer = new KafkaConsumer<>(consumerConfigs);
             consumer.subscribe((Collection<String>) ImmediateServiceConfigs.get(TOPICS));
-            long lastOffset = 0;
-            long timeOut=0;
-            TopicPartition p = null;
-            List<ConsumerRecord<String, Object>> buffer = new ArrayList<>(); // 로컬 저장
-            log.info("Immediate Client running...");
+            long lastOffset;
+            long unconsumedTime=0;
+
+            //커밋되지 않은 레코드를 저장하는 로컬 버퍼 선언
+            List<ConsumerRecord<String, Object>> buffer = new ArrayList<>();
             while (true) {
+                // 이 블럭은 제대로 실행되는지 확인하기 위한 코드임
                 long start = System.currentTimeMillis();
-                ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis(1000));
-                long end = System.currentTimeMillis();
-                long Interval = (end - start)/1000;
-                timeOut += Interval;
-                if(timeOut > 5.0){
-                    timeOut = 0;
+                ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis(POLL_INTERVAL_MILLIS));
+                unconsumedTime += System.currentTimeMillis() - start;
+                if (unconsumedTime > TIMEOUT_MILLIS) {
+                    unconsumedTime = 0;
                     log.info("Immediate Client running...");
-                } // for run test
-                if (records.isEmpty()) continue;
-                else {
+                }
+
+                if (!records.isEmpty()) {
                     for (TopicPartition partition : records.partitions()) {
-                        p = partition;
                         List<ConsumerRecord<String, Object>> partitionRecords = records.records(partition);
                         for (ConsumerRecord<String, Object> record : partitionRecords) {
                             lastOffset = record.offset();
-                            // 최신 오프셋을 버퍼가 기준치를 충족 했을 때만 if문 안에서 업데이트 해줄 수 있지만,
-                            // 타임 아웃에도 읽은 만큼을 커밋해줘야하기 때문에 항상 기준치 크기만큼 커밋되는 것이 아니라
-                            // 매번 최신 오프셋을 업뎃하는게 좋아 보여요
                             log.info(String.format("buffer size = %d , offset : %d , value : %s", buffer.size(), record.offset(), record.value()));
                             consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
                         }
                     }
+                } else {
+                    continue;
                 }
             }
         } catch (WakeupException e) {
@@ -82,8 +105,51 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     }
 
     @Override
-    public void execute() {
+    public void execute(Object obj) {
+        List<Map<String, Object>> buffer = (List<Map<String,Object>>) obj;
 
+        //TODO : 토픽의 이름에 대문자가 있는 문제로 인하여 하드코딩된 인덱스를 임시로 사용함
+        //String index = ((List<String>) listerServiceConfigs.get(TOPICS)).get(0);
+        String index = "lee";
+
+        try (Client client = new Client(pbftClientProperties)) {
+            try (EsRestClient esRestClient = new EsRestClient(esRestClientConfigs)) {
+                try {
+                    esRestClient.connectToEs();
+                } catch (NoSuchFieldException | EsRestClient.EsSSLException e) {
+                    log.error("cannot connect to elasticsearch. error : ", e);
+                }
+
+                List<String> hashList = new ArrayList<>();
+                for(Map<String, Object> entry : buffer) {
+                    String jsonMap = null;
+                    try {
+                        jsonMap = objectMapper.writeValueAsString(entry);
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
+                    hashList.add(Util.hash(jsonMap));
+                }
+                HashTree hashTree = new HashTree(hashList.toArray(new String[0]));
+                int blockNumber = 0;
+                try {
+                    blockNumber = storeHeaderAndHashToPBFTAndReturnIdx(client, index, hashTree.toString(), hashList);
+                } catch (IOException e) {
+                    log.error("cannot store block header to Blockchain cluster. continuing next consume... ", e);
+                }
+                try {
+                    esRestClient.bulkInsertDocumentByProcessor(index, index, blockNumber, buffer, false
+                            , 1, 1000, 10, ByteSizeUnit.MB, 5);
+                } catch (IOException | EsRestClient.EsException | EsRestClient.EsConcurrencyException | InterruptedException e) {
+                    //TODO : 삽입이 실패한 경우 되돌릴수 있다면 되돌리기
+                    log.error("cannot insert data to elasticsearch. ", e);
+                }
+                log.info(String.format("Block #%d inserted to Wallaby. block size : %d", blockNumber, buffer.size()));
+
+            } catch (IOException e) {
+                log.error("cannot connect to elasticsearch. error : ", e);
+            }
+        }
     }
 
     @Override
@@ -97,11 +163,24 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     @Override
     public void afterPropertiesSet() throws Exception {
         asyncExecutionService.runAsConsumerExecutor(this::startConsumer);
-        // 2번 문제 실험시 위 실행 명령어를 주석처리
     }
 
     @Override
     public void destroy() throws Exception {
         this.shutdownConsumer();
+    }
+
+    private int storeHeaderAndHashToPBFTAndReturnIdx(Client client, String chainName, String root, List<String> hashList) throws IOException {
+        //send [block#, root] to PBFT to PBFT generates Header and store to sqliteDB itself
+        Operation insertHeaderOp;
+        if(isHashListInclude)
+            insertHeaderOp = new InsertHeaderOperation(client.getPublicKey(), chainName, hashList, root);
+        else
+            insertHeaderOp = new InsertHeaderOperation(client.getPublicKey(), chainName, root);
+
+        RequestMessage insertRequestMsg = RequestMessage.makeRequestMsg(client.getPrivateKey(), insertHeaderOp);
+        client.request(insertRequestMsg);
+        int blockNumber = (int) client.getReply();
+        return blockNumber;
     }
 }
