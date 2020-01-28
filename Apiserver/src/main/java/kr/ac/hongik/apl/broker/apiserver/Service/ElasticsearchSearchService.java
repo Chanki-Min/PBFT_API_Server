@@ -25,7 +25,7 @@ public class ElasticsearchSearchService {
 	 * @param elasticsearchQuery elasticsearch에게서 low-level rest 검색을 하기 위하여 필요한 값들의 Pojo
 	 * @return elasticsearch에게서 검색하여 받아온 http Entity의 toString()값
 	 */
-	public String searchFromElastic(ElasticsearchQuery elasticsearchQuery) throws EsRestClient.EsSSLException, NoSuchFieldException, IOException {
+	public String searchFromElasticsearch(ElasticsearchQuery elasticsearchQuery) throws EsRestClient.EsSSLException, NoSuchFieldException, IOException {
 		try (EsRestClient esRestClient = new EsRestClient(esRestClientConfigs)) {
 			esRestClient.connectToEs();
 			Request request = new Request(elasticsearchQuery.getHttpProtocol(), elasticsearchQuery.getEndPoint());

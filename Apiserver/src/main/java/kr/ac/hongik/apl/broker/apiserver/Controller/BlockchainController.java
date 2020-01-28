@@ -60,7 +60,7 @@ public class BlockchainController {
 	public String searchAndVerifyData(@RequestBody ElasticsearchQuery elasticsearchQuery) {
 		String searchResult;
 		try {
-			searchResult = elasticsearchSearchService.searchFromElastic(elasticsearchQuery);
+			searchResult = elasticsearchSearchService.searchFromElasticsearch(elasticsearchQuery);
 		} catch (IOException | EsRestClient.EsSSLException | NoSuchFieldException e) {
 			log.error(SEARCH_ERROR_MSG, e);
 			return String.format(SEARCH_ERROR_MSG + "%s", e);
