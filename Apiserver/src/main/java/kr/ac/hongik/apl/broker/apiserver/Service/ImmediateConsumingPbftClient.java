@@ -9,6 +9,7 @@ import kr.ac.hongik.apl.Messages.RequestMessage;
 import kr.ac.hongik.apl.Operations.InsertHeaderOperation;
 import kr.ac.hongik.apl.Operations.Operation;
 import kr.ac.hongik.apl.Util;
+import kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -30,21 +31,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Service
 public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
-
-    public static final String TOPICS = "kafka.listener.service.immediate.topic"; // lee2 는 imme
-    public static final String MIN_BATCH_SIZE = "kafka.listener.service.minBatchSize";
     private final AtomicBoolean closed = new AtomicBoolean(false);
-
-    //TODO : 이 값은 PBFT에 1차 해쉬도 삽입할지를 결정한다. 설정 값 또는 다른 방식으로 받을 필요가 있다.
-    private boolean isHashListInclude = true;
-    private int TIMEOUT_MILLIS = 5000;
-    private int POLL_INTERVAL_MILLIS = 1000;
     private KafkaConsumer<String, Object> consumer = null;
 
     @Resource(name = "consumerConfigs")
     private Map<String, Object> consumerConfigs;
     @Resource(name = "ImmediateClientConfigs")
-    private Map<String, Object> ImmediateServiceConfigs;
+    private Map<String, Object> immediateConsumerConfigs;
     @Resource(name = "pbftClientProperties")
     private Properties pbftClientProperties;
     @Resource(name = "esRestClientConfigs")
@@ -67,20 +60,20 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
             //consumerConfigs.replace(ConsumerConfig.GROUP_ID_CONFIG,"lee2");
             log.info("Start ConsumingPbftClientBuffer service");
             consumer = new KafkaConsumer<>(consumerConfigs);
-            consumer.subscribe((Collection<String>) ImmediateServiceConfigs.get(TOPICS));
+            consumer.subscribe((Collection<String>) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_TOPICS));
             long lastOffset;
             long unconsumedTime=0;
 
             //커밋되지 않은 레코드를 저장하는 로컬 버퍼 선언
-            List<ConsumerRecord<String, Object>> buffer = new ArrayList<>();
+            List<Map<String, Object>> buffer;
             while (true) {
                 // 이 블럭은 제대로 실행되는지 확인하기 위한 코드임
                 long start = System.currentTimeMillis();
-                ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis(POLL_INTERVAL_MILLIS));
+                ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS)));
                 unconsumedTime += System.currentTimeMillis() - start;
-                if (unconsumedTime > TIMEOUT_MILLIS) {
+                if (unconsumedTime > ((int) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_TIMEOUT_MILLIS))) {
                     unconsumedTime = 0;
-                    log.info("Immediate Client running...");
+                    log.debug("Immediate Client running...");
                 }
 
                 if (!records.isEmpty()) {
@@ -88,7 +81,9 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
                         List<ConsumerRecord<String, Object>> partitionRecords = records.records(partition);
                         for (ConsumerRecord<String, Object> record : partitionRecords) {
                             lastOffset = record.offset();
-                            log.info(String.format("buffer size = %d , offset : %d , value : %s", buffer.size(), record.offset(), record.value()));
+                            //Immediate Consumer는 각 레코드가 List<Map>인 것을 받아서 각 레코드를 받은 즉시 execute한다
+                            buffer = (List<Map<String, Object>>) record.value();
+                            execute(buffer);
                             consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
                         }
                     }
@@ -107,10 +102,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     @Override
     public void execute(Object obj) {
         List<Map<String, Object>> buffer = (List<Map<String,Object>>) obj;
-
-        //TODO : 토픽의 이름에 대문자가 있는 문제로 인하여 하드코딩된 인덱스를 임시로 사용함
-        //String index = ((List<String>) listerServiceConfigs.get(TOPICS)).get(0);
-        String index = "lee";
+        String index = ((List<String>) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_TOPICS)).get(0);
 
         try (Client client = new Client(pbftClientProperties)) {
             try (EsRestClient esRestClient = new EsRestClient(esRestClientConfigs)) {
@@ -122,7 +114,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
 
                 List<String> hashList = new ArrayList<>();
                 for(Map<String, Object> entry : buffer) {
-                    String jsonMap = null;
+                    String jsonMap;
                     try {
                         jsonMap = objectMapper.writeValueAsString(entry);
                     } catch (JsonProcessingException e) {
@@ -173,7 +165,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     private int storeHeaderAndHashToPBFTAndReturnIdx(Client client, String chainName, String root, List<String> hashList) throws IOException {
         //send [block#, root] to PBFT to PBFT generates Header and store to sqliteDB itself
         Operation insertHeaderOp;
-        if(isHashListInclude)
+        if( ((boolean) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_IS_HASHLIST_INCLUDE)) )
             insertHeaderOp = new InsertHeaderOperation(client.getPublicKey(), chainName, hashList, root);
         else
             insertHeaderOp = new InsertHeaderOperation(client.getPublicKey(), chainName, root);

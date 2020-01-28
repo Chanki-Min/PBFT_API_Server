@@ -78,7 +78,7 @@ public class BlockChainVerifierImpl implements BlockChainVerifier {
 					} else {
 						List<String> result = (List<String>) verifyResult;
 						//TODO : 결과를 Locke backend, 또는 kafka topic으로 보내기
-						log.info("BlockVerification end, send to server, result : ");
+						log.debug("BlockVerification end, send to server, result : ");
 						result.forEach(log::info);
 					}
 				}
@@ -105,7 +105,7 @@ public class BlockChainVerifierImpl implements BlockChainVerifier {
 				} else {
 					List<String> result = (List<String>) verifyResult;
 					//TODO : 결과를 Locke backend, 또는 kafka topic으로 보내기
-					log.info("BlockVerification end, send to server, result : ");
+					log.debug("BlockVerification end, send to server, result : ");
 					result.forEach(log::info);
 				}
 			}

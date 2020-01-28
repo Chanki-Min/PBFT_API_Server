@@ -15,6 +15,7 @@ public class SchedulerConfiguration {
 	public static final String SCHEDULER_POOL_SIZE = "broker.scheduler.pool.size";
 	public static final String SCHEDULER_THREAD_NAME_PREFIX = "broker.scheduler.thread.name.prefix";
 	public static final String SCHEDULER_DEFAULT_CRON = "broker.scheduler.default.cron";
+	public static final String SCHEDULER_START_WHEN_INITIALIZE = "broker.scheduler.startWhenInitialize";
 
 	@Autowired
 	Environment env;

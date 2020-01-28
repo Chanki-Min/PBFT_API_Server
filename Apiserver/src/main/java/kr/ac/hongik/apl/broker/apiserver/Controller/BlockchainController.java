@@ -3,6 +3,7 @@ package kr.ac.hongik.apl.broker.apiserver.Controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import kr.ac.hongik.apl.ES.EsRestClient;
 import kr.ac.hongik.apl.broker.apiserver.Pojo.BlockId;
+import kr.ac.hongik.apl.broker.apiserver.Pojo.ChangeCronScheduleResponse;
 import kr.ac.hongik.apl.broker.apiserver.Pojo.ElasticsearchQuery;
 import kr.ac.hongik.apl.broker.apiserver.Service.*;
 import lombok.extern.slf4j.Slf4j;
@@ -38,11 +39,10 @@ public class BlockchainController {
 	 */
 	@RequestMapping(value = "/changeVerificationSchedule")
 	@ResponseBody
-	public String changeCronSchedule(@RequestParam(name = "cron", required = true) String cron) {
+	public ChangeCronScheduleResponse changeCronSchedule(@RequestParam(name = "cron", required = true) String cron) {
 		blockVerificationSchedulerService.changeCronSchedule(cron);
 
-		//TODO : ack format 다듬기
-		return String.format("Verification schedule changed to %s", cron);
+		return new ChangeCronScheduleResponse(String.format("Verification schedule changed to %s", cron), cron);
 	}
 
 	/**

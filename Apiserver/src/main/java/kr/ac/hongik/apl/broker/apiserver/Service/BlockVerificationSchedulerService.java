@@ -1,5 +1,6 @@
 package kr.ac.hongik.apl.broker.apiserver.Service;
 
+import kr.ac.hongik.apl.broker.apiserver.Configuration.SchedulerConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -82,10 +83,11 @@ public class BlockVerificationSchedulerService implements InitializingBean, Disp
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		//TODO : 검증 스케쥴러 활성화 (디버깅을 위하여 주석처리함)
-		//isSchedulerRunning.set(true);
-		//cron = env.getProperty(SchedulerConfiguration.SCHEDULER_DEFAULT_CRON);
-		//this.start();
+		if( Boolean.parseBoolean(env.getProperty(SchedulerConfiguration.SCHEDULER_START_WHEN_INITIALIZE))) {
+			isSchedulerRunning.set(true);
+			cron = env.getProperty(SchedulerConfiguration.SCHEDULER_DEFAULT_CRON);
+			this.start();
+		}
 	}
 
 	@Override
