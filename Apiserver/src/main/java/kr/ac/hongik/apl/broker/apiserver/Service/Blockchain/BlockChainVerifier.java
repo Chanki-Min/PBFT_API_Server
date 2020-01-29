@@ -1,4 +1,4 @@
-package kr.ac.hongik.apl.broker.apiserver.Service;
+package kr.ac.hongik.apl.broker.apiserver.Service.Blockchain;
 
 import kr.ac.hongik.apl.broker.apiserver.Pojo.BlockId;
 

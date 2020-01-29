@@ -1,4 +1,4 @@
-package kr.ac.hongik.apl.broker.apiserver.Service;
+package kr.ac.hongik.apl.broker.apiserver.Service.Elasticsearch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

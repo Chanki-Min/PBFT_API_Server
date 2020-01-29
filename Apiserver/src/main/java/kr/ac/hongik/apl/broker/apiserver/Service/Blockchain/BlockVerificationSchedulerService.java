@@ -1,4 +1,4 @@
-package kr.ac.hongik.apl.broker.apiserver.Service;
+package kr.ac.hongik.apl.broker.apiserver.Service.Blockchain;
 
 import kr.ac.hongik.apl.broker.apiserver.Configuration.SchedulerConfiguration;
 import lombok.extern.slf4j.Slf4j;

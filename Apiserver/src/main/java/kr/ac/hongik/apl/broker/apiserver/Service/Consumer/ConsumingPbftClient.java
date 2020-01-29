@@ -1,4 +1,4 @@
-package kr.ac.hongik.apl.broker.apiserver.Service;
+package kr.ac.hongik.apl.broker.apiserver.Service.Consumer;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;

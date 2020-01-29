@@ -1,4 +1,4 @@
-package kr.ac.hongik.apl.broker.apiserver.Service;
+package kr.ac.hongik.apl.broker.apiserver.Service.Elasticsearch;
 
 import kr.ac.hongik.apl.ES.EsRestClient;
 import kr.ac.hongik.apl.broker.apiserver.Pojo.ElasticsearchQuery;
