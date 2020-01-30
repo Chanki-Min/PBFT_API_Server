@@ -24,10 +24,14 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.BUFFERED_CONSUMER_MIN_BATCH_SIZE;
+import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.BUFFERED_CONSUMER_TIMEOUT_MILLIS;
 
 @Slf4j
 @Service
@@ -45,13 +49,15 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     public HashMap<String, Object> esRestClientConfigs;
 
     //Async 노테이션의 메소드는 this가 invoke()할 수 없기 때문에 비동기 실행만 시키는 서비스를 주입한다
-    @Autowired
-    private AsyncExecutionService asyncExecutionService;
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final AsyncExecutionService asyncExecutionService;
+    private final ObjectMapper objectMapper;
+    private final ConsumerDataService consumerDataService;
 
-
-    public ImmediateConsumingPbftClient() {
+    @Autowired
+    public ImmediateConsumingPbftClient(AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper, ConsumerDataService consumerDataService) {
+        this.asyncExecutionService = asyncExecutionService;
+        this.objectMapper = objectMapper;
+        this.consumerDataService = consumerDataService;
     }
 
     @Override
@@ -71,6 +77,8 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
                 // 이 블럭은 제대로 실행되는지 확인하기 위한 코드임
                 long start = System.currentTimeMillis();
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS)));
+                consumerDataService.setData(consumer.subscription().toString(),"공정 consumer",
+                        (Integer)immediateConsumerConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS), (Integer)immediateConsumerConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
                 unconsumedTime += System.currentTimeMillis() - start;
                 if (unconsumedTime > ((int) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_TIMEOUT_MILLIS))) {
                     unconsumedTime = 0;
@@ -96,6 +104,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
             // 정상적으로 아토믹 불리언이 false이라면 예외를 무시하고 종료한다
             if (!closed.get()) throw e;
         } finally {
+            consumerDataService.deleteData(consumer.subscription().toString());
             consumer.close();
         }
     }

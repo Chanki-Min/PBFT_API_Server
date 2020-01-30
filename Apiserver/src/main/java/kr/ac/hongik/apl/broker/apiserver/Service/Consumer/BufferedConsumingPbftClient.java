@@ -49,11 +49,13 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     //Async 노테이션의 메소드는 this가 invoke()할 수 없기 때문에 비동기 실행만 시키는 서비스를 주입한다
     private final AsyncExecutionService asyncExecutionService;
     private final ObjectMapper objectMapper;
+    private final ConsumerDataService consumerDataService;
 
     @Autowired
-    public BufferedConsumingPbftClient(AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper) {
+    public BufferedConsumingPbftClient(AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper, ConsumerDataService consumerDataService) {
         this.asyncExecutionService = asyncExecutionService;
         this.objectMapper = objectMapper;
+        this.consumerDataService = consumerDataService;
     }
     @Override
     @Async("consumerThreadPool")
@@ -73,8 +75,9 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
             while (true) {
                 long start = System.currentTimeMillis();
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) bufferedClientConfigs.get(BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS)));
+                consumerDataService.setData(consumer.subscription().toString(),"sensor consumer",
+                        (Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS), (Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
                 unconsumedTime += System.currentTimeMillis() - start;
-
                 //TIMEOUT_MILLIS까지 새로운 레코드가 오지 않는다면 지금까지 받아온 레코드로 블록을 만들고 오프셋을 커밋한다
                 if(unconsumedTime > ((int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS)) && records.isEmpty()){
                     unconsumedTime = 0;
@@ -108,11 +111,14 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                         }
                     }
                 }
+//                this.shutdownConsumer();
             }
         } catch (WakeupException e) {
             // 정상적으로 아토믹 불리언이 false이라면 예외를 무시하고 종료한다
             if (!closed.get()) throw e;
         } finally {
+            consumerDataService.deleteData(consumer.subscription().toString());
+//            구독하는 토픽은 컨슈머당 1개뿐이라 가정. 그대로 스트링화 하였음.
             consumer.close();
         }
     }
