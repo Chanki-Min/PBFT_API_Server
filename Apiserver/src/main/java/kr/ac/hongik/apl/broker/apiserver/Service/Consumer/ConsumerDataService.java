@@ -15,26 +15,41 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Getter
 public class ConsumerDataService {
-    ConcurrentHashMap<String, ConsumerResult> ConsumerDataMap = new ConcurrentHashMap<>();
-    public void setData(String subscription, String name,Integer timeout, Integer minbatch){
-        ConsumerResult consumerResult = new ConsumerResult(name,timeout,minbatch);
-        if (!checkTopic(subscription)){
-            this.ConsumerDataMap.put(subscription.toString(),consumerResult);
-            log.info("checking add func:"+ConsumerDataMap.keySet()+ConsumerDataMap.get(subscription).getName()+ConsumerDataMap.get(subscription).getTimeout()+
+    private ConcurrentHashMap<String, ConsumerResult> ConsumerDataMap = new ConcurrentHashMap<>();
+
+    public void setData(String subscription, int timeout, int minBatchSize) {
+        ConsumerResult consumerResult = new ConsumerResult(timeout,minBatchSize);
+
+        if (!checkTopic(subscription)) {
+            this.ConsumerDataMap.put(subscription,consumerResult);
+
+            log.trace("checking add func:"+ConsumerDataMap.keySet()+
+                    ConsumerDataMap.get(subscription).getTimeout()+
                     ConsumerDataMap.get(subscription).getMinbatch());
         }
     }
-//TODO :: { topic , (타임아웃, 배치 사이즈) } 형태로 받아야 함.
-    public boolean checkTopic(String topic){
-        return this.ConsumerDataMap.containsKey(topic);
-    }
 
-    public void deleteData(String subs){
-        if(this.ConsumerDataMap.containsKey(subs))
-        {
-            this.ConsumerDataMap.remove(subs);
-            log.info(subs+"'s data is removed.");
+    public void setData(String subscription, int timeout) {
+        ConsumerResult consumerResult = new ConsumerResult(timeout, 0);
+
+        if (!checkTopic(subscription)) {
+            this.ConsumerDataMap.put(subscription,consumerResult);
+
+            log.trace("checking add func:"+ConsumerDataMap.keySet()+
+                    ConsumerDataMap.get(subscription).getTimeout()+
+                    ConsumerDataMap.get(subscription).getMinbatch());
         }
     }
 
+    public boolean checkTopic(String topic) {
+        return this.ConsumerDataMap.containsKey(topic);
+    }
+
+    public void deleteData(String subscription) {
+        if(this.ConsumerDataMap.containsKey(subscription))
+        {
+            this.ConsumerDataMap.remove(subscription);
+            log.info(String.format("%s's data has removed", subscription));
+        }
+    }
 }

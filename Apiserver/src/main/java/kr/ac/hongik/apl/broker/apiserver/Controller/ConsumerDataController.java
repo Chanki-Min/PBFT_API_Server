@@ -14,13 +14,16 @@ import java.util.Map;
 @Controller
 public class ConsumerDataController {
 
-    @Autowired
-    public ConsumerDataService consumerDataService;
+    public final ConsumerDataService consumerDataService;
 
+    @Autowired
+    public ConsumerDataController(ConsumerDataService consumerDataService) {
+        this.consumerDataService = consumerDataService;
+    }
 
     @RequestMapping(value = "/consumer/getMetadata")
     @ResponseBody
-    public Map<String, ConsumerResult> getAllConsumerData(){
+    public Map<String, ConsumerResult> getAllConsumerData() {
         return consumerDataService.getConsumerDataMap();
     }
 }

@@ -77,8 +77,8 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
                 // 이 블럭은 제대로 실행되는지 확인하기 위한 코드임
                 long start = System.currentTimeMillis();
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS)));
-                consumerDataService.setData(consumer.subscription().toString(),"공정 consumer",
-                        (Integer)immediateConsumerConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS), (Integer)immediateConsumerConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
+                consumerDataService.setData(consumer.subscription().stream().findFirst().get(),
+                        (Integer)immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_TIMEOUT_MILLIS));
                 unconsumedTime += System.currentTimeMillis() - start;
                 if (unconsumedTime > ((int) immediateConsumerConfigs.get(KafkaConsumerConfiguration.IMMEDIATE_CONSUMER_TIMEOUT_MILLIS))) {
                     unconsumedTime = 0;

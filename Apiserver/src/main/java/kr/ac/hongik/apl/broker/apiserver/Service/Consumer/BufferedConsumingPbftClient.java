@@ -75,8 +75,9 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
             while (true) {
                 long start = System.currentTimeMillis();
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) bufferedClientConfigs.get(BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS)));
-                consumerDataService.setData(consumer.subscription().toString(),"sensor consumer",
-                        (Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS), (Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
+                consumerDataService.setData(consumer.subscription().stream().findFirst().get(),
+                        (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS),
+                        (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
                 unconsumedTime += System.currentTimeMillis() - start;
                 //TIMEOUT_MILLIS까지 새로운 레코드가 오지 않는다면 지금까지 받아온 레코드로 블록을 만들고 오프셋을 커밋한다
                 if(unconsumedTime > ((int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS)) && records.isEmpty()){
