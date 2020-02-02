@@ -9,6 +9,7 @@ import kr.ac.hongik.apl.Messages.RequestMessage;
 import kr.ac.hongik.apl.Operations.InsertHeaderOperation;
 import kr.ac.hongik.apl.Operations.Operation;
 import kr.ac.hongik.apl.Util;
+import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerInfo;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -37,6 +38,12 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
 
     private KafkaConsumer<String, Object> consumer = null;
 
+    private ConsumerInfo bufferedConsumerInfo = new ConsumerInfo();
+
+    private String newTopicName = null;
+    private int newSize = 0;
+    private int newTimeout = 0;
+
     @Resource(name = "consumerConfigs")
     private Map<String, Object> consumerConfigs;
     @Resource(name = "bufferedClientConfigs")
@@ -59,9 +66,10 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
         this.consumerDataService = consumerDataService;
         this.sendBlockInsertionAckService = sendBlockInsertionAckService;
     }
+
     @Override
     @Async("consumerThreadPool")
-    public void startConsumer() {
+    public ConsumerInfo startConsumer() {
         try {
             log.info("Start ConsumingPbftClientBuffer service");
             consumer = new KafkaConsumer<>(consumerConfigs);
@@ -121,12 +129,30 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
             }
         } catch (WakeupException e) {
             // 정상적으로 아토믹 불리언이 false이라면 예외를 무시하고 종료한다
-            if (!closed.get()) throw e;
+            if (!closed.get()) {
+                bufferedConsumerInfo.setError(true);
+                bufferedConsumerInfo.setException(e);
+                throw e;
+            }
+        } catch (Exception e){
+            bufferedConsumerInfo.setError(true);
+            bufferedConsumerInfo.setException(e);
+            throw e;
         } finally {
+            bufferedConsumerInfo.setTopicName(consumer.subscription().toString());
+            bufferedConsumerInfo.setMinBatchSize((Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
+            bufferedConsumerInfo.setTimeout((Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS));
+            // TODO : db에 삽입
             consumerDataService.deleteData(consumer.subscription().toString());
 //            구독하는 토픽은 컨슈머당 1개뿐이라 가정. 그대로 스트링화 하였음.
             consumer.close();
+            if(bufferedConsumerInfo.isSettings()){
+                bufferedConsumerInfo.setTopicName(newTopicName);
+                bufferedConsumerInfo.setMinBatchSize(newSize);
+                bufferedConsumerInfo.setTimeout(newTimeout);
+            }
         }
+        return bufferedConsumerInfo;
     }
 
     @Override
@@ -184,11 +210,31 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        asyncExecutionService.runAsConsumerExecutor(this::startConsumer);
+        asyncExecutionService.runAsConsumerExecutor(this::startConsumer,bufferedConsumerInfo);
     }
 
     @Override
     public void destroy() throws Exception {
+        bufferedConsumerInfo.setShutdown(true);
+        this.shutdownConsumer();
+    }
+
+    /**
+     * 케이스 번호가 0 즉, 설정을 동적으로 변경하고자 하면,
+     * 먼저 finally에서 객체 정보를 db에 저장하고, ( 고민 해봐야함 )
+     * 넘겨받은 인자들을 기존 객체에 쓴 후,
+     * 그 객체를 반환 후, 재가동 시 그대로 쓴다.
+     *
+     * @param topicName
+     * @param minBatchSize
+     * @param timeout
+     * @throws Exception
+     */
+    public void acceptConsumerSettings(String topicName, int minBatchSize, int timeout) throws Exception {
+        bufferedConsumerInfo.setSettings(true);
+        newTopicName = topicName;
+        newSize = minBatchSize;
+        newTimeout = timeout;
         this.shutdownConsumer();
     }
 

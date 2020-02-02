@@ -10,6 +10,7 @@ import kr.ac.hongik.apl.Operations.InsertHeaderOperation;
 import kr.ac.hongik.apl.Operations.Operation;
 import kr.ac.hongik.apl.Util;
 import kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration;
+import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerInfo;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -24,20 +25,24 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.BUFFERED_CONSUMER_MIN_BATCH_SIZE;
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.BUFFERED_CONSUMER_TIMEOUT_MILLIS;
+import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.*;
 
 @Slf4j
 @Service
 public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private KafkaConsumer<String, Object> consumer = null;
+
+    private ConsumerInfo immediateConsumerInfo = new ConsumerInfo();
+
+    private String newTopicName = null;
+    private int newSize = 0;
+    private int newTimeout = 0;
 
     @Resource(name = "consumerConfigs")
     private Map<String, Object> consumerConfigs;
@@ -62,7 +67,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
 
     @Override
     @Async("consumerThreadPool")
-    public void startConsumer() {
+    public ConsumerInfo startConsumer() {
         try {
             //consumerConfigs.replace(ConsumerConfig.GROUP_ID_CONFIG,"lee2");
             log.info("Start ConsumingPbftClientBuffer service");
@@ -102,11 +107,32 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
             }
         } catch (WakeupException e) {
             // 정상적으로 아토믹 불리언이 false이라면 예외를 무시하고 종료한다
-            if (!closed.get()) throw e;
+            if (!closed.get()) {
+                immediateConsumerInfo.setError(true);
+                immediateConsumerInfo.setException(e);
+                // TODO : 설정 플래그 초기화 여부 해결
+                throw e;
+            }
+        } catch (Exception e){
+            immediateConsumerInfo.setError(true);
+            immediateConsumerInfo.setException(e);
+            // TODO : 설정 플래그 초기화 여부 해결
+            throw e;
         } finally {
+            immediateConsumerInfo.setMinBatchSize(0);
+            immediateConsumerInfo.setTopicName(consumer.subscription().toString());
+            immediateConsumerInfo.setTimeout((Integer)immediateConsumerConfigs.get(IMMEDIATE_CONSUMER_TIMEOUT_MILLIS));
+            // TODO : db에 삽입
             consumerDataService.deleteData(consumer.subscription().toString());
             consumer.close();
+
+            if(immediateConsumerInfo.isSettings()){
+                immediateConsumerInfo.setTopicName(newTopicName);
+                immediateConsumerInfo.setMinBatchSize(newSize);
+                immediateConsumerInfo.setTimeout(newTimeout);
+            }
         }
+        return immediateConsumerInfo;
     }
 
     @Override
@@ -164,11 +190,30 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        asyncExecutionService.runAsConsumerExecutor(this::startConsumer);
+        asyncExecutionService.runAsConsumerExecutor(this::startConsumer,immediateConsumerInfo);
     }
 
-    @Override
     public void destroy() throws Exception {
+        immediateConsumerInfo.setShutdown(true);
+        this.shutdownConsumer();
+    }
+
+    /**
+     * 케이스 번호가 0 즉, 설정을 동적으로 변경하고자 하면,
+     * 먼저 finally에서 객체 정보를 db에 저장하고,
+     * 넘겨받은 인자들을 기존 객체에 쓴 후,
+     * 그 객체를 반환 후, 재가동 시 그대로 쓴다.
+     *
+     * @param topicName
+     * @param minBatchSize
+     * @param timeout
+     * @throws Exception
+     */
+    public void acceptConsumerSettings(String topicName, int minBatchSize, int timeout) throws Exception {
+        immediateConsumerInfo.setSettings(true);
+        newTopicName = topicName;
+        newSize = minBatchSize;
+        newTimeout = timeout;
         this.shutdownConsumer();
     }
 
