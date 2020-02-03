@@ -50,12 +50,14 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     private final AsyncExecutionService asyncExecutionService;
     private final ObjectMapper objectMapper;
     private final ConsumerDataService consumerDataService;
+    private final SendBlockInsertionAckService sendBlockInsertionAckService;
 
     @Autowired
-    public BufferedConsumingPbftClient(AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper, ConsumerDataService consumerDataService) {
+    public BufferedConsumingPbftClient(AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper, ConsumerDataService consumerDataService, SendBlockInsertionAckService sendBlockInsertionAckService) {
         this.asyncExecutionService = asyncExecutionService;
         this.objectMapper = objectMapper;
         this.consumerDataService = consumerDataService;
+        this.sendBlockInsertionAckService = sendBlockInsertionAckService;
     }
     @Override
     @Async("consumerThreadPool")
@@ -105,6 +107,9 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                             //poll된 records로 하나씩 채워진 buffer가 1블록 사이즈를 달성했다면 소비하여 블록을 삽입한다
                             if (buffer.size() == (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE)) {
                                 execute(buffer);
+                                //마지막 데이터로 Ack를 보낸다
+                                Map<String, Object> last = buffer.get(buffer.size()-1);
+                                sendBlockInsertionAckService.sendLastData(last);
                                 buffer.clear();
                                 log.debug("consumed 1 batch");
                                 consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
