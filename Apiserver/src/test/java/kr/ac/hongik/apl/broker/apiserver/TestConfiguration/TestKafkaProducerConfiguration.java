@@ -1,13 +1,12 @@
-package kr.ac.hongik.apl.broker.apiserver.Configuration;
+package kr.ac.hongik.apl.broker.apiserver.TestConfiguration;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
-import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
@@ -16,10 +15,9 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 import java.util.HashMap;
 import java.util.Map;
 
-@Configuration
-@PropertySource("classpath:kafka.properties")
-@EnableKafka
-public class KafkaProducerConfiguration {
+@TestConfiguration
+@PropertySource("classpath:testKafka.properties")
+public class TestKafkaProducerConfiguration {
 	@Autowired
 	private Environment env;
 
