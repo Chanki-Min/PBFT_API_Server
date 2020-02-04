@@ -7,7 +7,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-//TODO : bufferedconsumer만 꺼지도록 구현
+/**
+ * 컨슈머 객체를 종료시키는 메소드들
+ * 1. shutdownBuffer 메소드와 shutdownImmediate 메소드는
+ * 각각 클라이언트의 들어온 요청에 대해 해당 컨슈머 서비스만을 종료시킨다.
+ * <p>
+ * 2. changeConsumerSettings 메소드는 bufferedConsumer 서브스에만 해당하는 메소드이며
+ * 인자로 topicName, minBatchSize, timeout 을 받아 acceptConsumerSettings 메소드에 넘겨준다.
+ * <p>
+ * immediateConsumer에 위 메서드가 없는 이유는
+ * immediateConsumer 서비스는 컨슈머의 설정들이 바뀔 일이 없기 때문이다.
+ */
 @RestController(value = "/consumer")
 public class ConsumerManagementController {
     @Autowired
@@ -17,30 +27,29 @@ public class ConsumerManagementController {
     ConsumingPbftClient immediateConsumingPbftClient;
 
 
-    @RequestMapping(value = "/consumer/shutdown")
+    @RequestMapping(value = "/consumer/buffer/shutdown")
     @ResponseBody
-    public String shutdown() throws Exception {
+    public String shutdownBuffer() throws Exception {
 
         bufferedConsumingPbftClient.destroy();
-        immediateConsumingPbftClient.destroy();
-        return "shutdown";
+        return "shutdown buffered consumer";
     }
 
-    /**
-     * @param topicName
-     * @param minBatchSize
-     * @param timeout
-     * @return
-     * @throws Exception
-     */
-    @RequestMapping(value = "/consumer/changesettings")
+    @RequestMapping(value = "/consumer/immediate/shutdown")
+    @ResponseBody
+    public String shutdownImmediate() throws Exception {
+
+        immediateConsumingPbftClient.destroy();
+        return "shutdown immediate consumer";
+    }
+
+    @RequestMapping(value = "/consumer/buffer/changesettings")
     @ResponseBody
     public String changeConsumerSettings(@RequestParam(value = "topicName", required = true, defaultValue = "hi") String topicName,
                                          @RequestParam(value = "minBatchSize", required = true, defaultValue = "600") int minBatchSize,
                                          @RequestParam(value = "timeout", required = true, defaultValue = "5000") int timeout) throws Exception {
 
         bufferedConsumingPbftClient.acceptConsumerSettings(topicName, minBatchSize, timeout);
-        immediateConsumingPbftClient.acceptConsumerSettings(topicName, minBatchSize, timeout);
-        return "shutdown";
+        return "changed buffered consumer's settings";
     }
 }
