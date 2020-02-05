@@ -1,6 +1,6 @@
 package kr.ac.hongik.apl.broker.apiserver.Controller;
 
-import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerResult;
+import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerData;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ public class ConsumerDataController {
 
     @RequestMapping(value = "/consumer/getMetadata")
     @ResponseBody
-    public Map<String, ConsumerResult> getAllConsumerData() {
+    public Map<String, ConsumerData> getAllConsumerData() {
         return consumerDataService.getConsumerDataMap();
     }
 }

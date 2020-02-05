@@ -14,11 +14,11 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS;
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.BUFFERED_CONSUMER_TOPICS;
-
 @SpringBootTest(classes = {ObjectMapper.class, TestKafkaConsumerConfiguration.class})
 public class SensorConsumerTest {
+	public static final String BUFFERED_CONSUMER_TOPICS = "kafka.listener.service.topic";
+	public static final String BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.poll.interval.millis";
+
 	@Resource(name = "consumerConfigs")
 	private Map<String, Object> consumerConfigs;
 	@Resource(name = "bufferedClientConfigs")

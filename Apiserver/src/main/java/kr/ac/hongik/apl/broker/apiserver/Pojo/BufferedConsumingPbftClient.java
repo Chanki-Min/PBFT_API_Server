@@ -1,4 +1,4 @@
-package kr.ac.hongik.apl.broker.apiserver.Service.Consumer;
+package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,8 +9,10 @@ import kr.ac.hongik.apl.Messages.RequestMessage;
 import kr.ac.hongik.apl.Operations.InsertHeaderOperation;
 import kr.ac.hongik.apl.Operations.Operation;
 import kr.ac.hongik.apl.Util;
-import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerInfo;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerDataService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumingPbftClient;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.SendBlockInsertionAckService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -19,21 +21,22 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.KafkaConsumerConfiguration.*;
-
 @Slf4j
-@Service
 public class BufferedConsumingPbftClient implements ConsumingPbftClient {
+    public static final String BUFFERED_CONSUMER_TOPICS = "kafka.listener.service.topic";
+    public static final String BUFFERED_CONSUMER_MIN_BATCH_SIZE = "kafka.listener.service.minBatchSize";
+    public static final String BUFFERED_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.isHashListInclude";
+    public static final String BUFFERED_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.timeout.millis";
+    public static final String BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.poll.interval.millis";
+
+
+
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private KafkaConsumer<String, Object> consumer = null;
@@ -44,13 +47,9 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     private int newSize = 0;
     private int newTimeout = 0;
 
-    @Resource(name = "consumerConfigs")
     private Map<String, Object> consumerConfigs;
-    @Resource(name = "bufferedClientConfigs")
     private Map<String, Object> bufferedClientConfigs;
-    @Resource(name = "pbftClientProperties")
     private Properties pbftClientProperties;
-    @Resource(name = "esRestClientConfigs")
     public HashMap<String, Object> esRestClientConfigs;
 
     //Async 노테이션의 메소드는 this가 invoke()할 수 없기 때문에 비동기 실행만 시키는 서비스를 주입한다
@@ -59,8 +58,16 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     private final ConsumerDataService consumerDataService;
     private final SendBlockInsertionAckService sendBlockInsertionAckService;
 
-    @Autowired
-    public BufferedConsumingPbftClient(AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper, ConsumerDataService consumerDataService, SendBlockInsertionAckService sendBlockInsertionAckService) {
+    public BufferedConsumingPbftClient(Map<String, Object> consumerConfigs, Map<String, Object> bufferedClientConfigs,
+                                       Properties pbftClientProperties, HashMap<String, Object> esRestClientConfigs,
+                                       AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper,
+                                       ConsumerDataService consumerDataService, SendBlockInsertionAckService sendBlockInsertionAckService)
+    {
+
+        this.consumerConfigs = consumerConfigs;
+        this.bufferedClientConfigs = bufferedClientConfigs;
+        this.pbftClientProperties = pbftClientProperties;
+        this.esRestClientConfigs = esRestClientConfigs;
         this.asyncExecutionService = asyncExecutionService;
         this.objectMapper = objectMapper;
         this.consumerDataService = consumerDataService;
@@ -68,7 +75,6 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     }
 
     @Override
-    @Async("consumerThreadPool")
     public ConsumerInfo startConsumer() {
         try {
             log.info("Start ConsumingPbftClientBuffer service");
@@ -84,7 +90,7 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
             List<Map<String, Object>> buffer = new ArrayList<>();
             while (true) {
                 long start = System.currentTimeMillis();
-                ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) bufferedClientConfigs.get(BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS)));
+                ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((long) bufferedClientConfigs.get(BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS)));
                 consumerDataService.setData(consumer.subscription().stream().findFirst().get(),
                         (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS),
                         (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));

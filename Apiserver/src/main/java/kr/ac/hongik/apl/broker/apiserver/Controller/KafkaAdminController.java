@@ -5,22 +5,25 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.ac.hongik.apl.broker.apiserver.Pojo.TopicData;
+import kr.ac.hongik.apl.broker.apiserver.Pojo.*;
+import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerFactoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.KafkaFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -35,43 +38,29 @@ public class KafkaAdminController {
 	@Autowired
 	ObjectMapper objectMapper;
 
+	@Autowired
+	ConsumerFactoryService consumerFactoryService;
 
-	@PostMapping("/topic/create")
+	@Autowired
+	AsyncExecutionService asyncExecutionService;
+
+	@PostMapping("/topic/create/buf")
 	@ResponseBody
-	public String createTopic(@RequestParam String topic, @RequestParam String numpartitions, @RequestParam String replicas) {
+	public String createBuffConsumer(@RequestBody ConsumerBufferConfigs configs) {
+		BufferedConsumingPbftClient bufferedConsumingPbftClient =
+				consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(),configs.getBuffConfigs());
+//TODO: NULL 지우고 혁수형과 의논
+		asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer, null);
+		return String.format("New Buffer Consumer added!");
+	}
 
-		log.info("Creating topic '{}'", topic);
-		AdminClient adminClient = AdminClient.create(kafkaAdmin.getConfig());
-
-		CreateTopicsResult result = adminClient.createTopics(Collections.singleton(getTopic(topic, Integer.parseInt(numpartitions), Short.valueOf(replicas))));
-		log.info(result.toString());
-
-		log.info("Describing topic '{}'", topic); //생성한 토픽 정보 출력
-
-		DescribeTopicsResult TopicResult = adminClient.describeTopics(Collections.singletonList(topic));
-		TopicData topicData = new TopicData();
-		AtomicReference<String> mappedValue = new AtomicReference<>(new String());
-
-		TopicResult.values().forEach((key, value) -> {
-			try {
-				topicData.setName(value.get().name());
-				topicData.setInternal(value.get().isInternal());
-				topicData.setPartitions(value.get().partitions());
-
-				objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				mappedValue.set(objectMapper.writeValueAsString(topicData));
-
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			} catch (JsonProcessingException e) {
-				e.printStackTrace();
-			}
-			System.out.println(mappedValue);
-		});
-		return mappedValue.get();
-
+	@PostMapping("/topic/create/imme")
+	@ResponseBody
+	public String createImmediateConsumer(@RequestBody ConsumerImmediateConfigs configs) {
+		ImmediateConsumingPbftClient immediateConsumingPbftClient =
+				consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(),configs.getConImmeConfigs());
+		asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer, null);
+		return String.format("New Immediate Consumer added!");
 	}
 
 
@@ -84,13 +73,12 @@ public class KafkaAdminController {
 		 */
 		log.info("Listing topic----------------------");
 		AdminClient adminClient = AdminClient.create(kafkaAdmin.getConfig());
-		AtomicReference<String> mappedValue = new AtomicReference<>(new String());
+		AtomicReference<String> mappedValue = new AtomicReference<>("");
 
 		try {
 			ListTopicsResult list = adminClient.listTopics();
 
-			List topics = list.names().get().stream()
-					.collect(Collectors.toList());
+			List<String> topics = new ArrayList<>(list.names().get());
 
 			List<TopicData> topicDataList = new ArrayList<>();
 
@@ -109,11 +97,7 @@ public class KafkaAdminController {
 			mappedValue.set(objectMapper.writeValueAsString(topicDataList));
 			System.out.println(mappedValue);
 
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-		} catch (JsonProcessingException e) {
+		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
 			e.printStackTrace();
 		}
 
