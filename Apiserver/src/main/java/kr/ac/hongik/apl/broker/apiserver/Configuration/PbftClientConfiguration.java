@@ -63,13 +63,12 @@ public class PbftClientConfiguration {
 		esRestClientConfigs.put("masterHostInfo", masterHostInfo);
 
 		try(EsRestClient esRestClient = new EsRestClient(esRestClientConfigs);) {
-			//TODO : elastic 권한 인증 좀더 이쁘게 바꾸기
 
 			esRestClient.connectToEs();
 			esRestClient.getClusterInfo();
 		} catch (Exception e) {
-			log.error("", e);
-			System.exit(404);
+			log.error(e.getMessage());
+			System.exit(0);
 		}
 		return esRestClientConfigs;
 	}

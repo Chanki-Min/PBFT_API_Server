@@ -11,7 +11,6 @@ import kr.ac.hongik.apl.Operations.Operation;
 import kr.ac.hongik.apl.Util;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerDataService;
-import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumingPbftClient;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.SendBlockInsertionAckService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -69,6 +68,8 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     @Override
     public Exception startConsumer() {
         try {
+            //TODO : 현재 객체의 참조를 ConsumerDataService에 삽입한다
+
             log.info("Start ConsumingPbftClientBuffer service");
             consumer = new KafkaConsumer<>(consumerConfigs);
             consumer.subscribe((Collection<String>) bufferedClientConfigs.get(BUFFERED_CONSUMER_TOPICS));
@@ -188,11 +189,6 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
             closed.set(true);
             consumer.wakeup();
         }
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        asyncExecutionService.runAsConsumerExecutor(this::startConsumer);
     }
 
     @Override
