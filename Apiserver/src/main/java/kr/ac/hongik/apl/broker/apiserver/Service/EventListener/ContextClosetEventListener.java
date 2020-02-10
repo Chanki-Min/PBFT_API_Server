@@ -109,7 +109,7 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 		log.info("Shutting down all running consumer threads...");
 		log.info("Current running consumer list is like as below");
 		try {
-			System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(consumerDataService.getConsumerDataMap()));
+			System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(consumerDataService.getConsumerMap()));
 		} catch (JsonProcessingException e) {
 			log.warn("JsonProcessingException thrown by System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(consumerDataService.getConsumerDataMap()))");
 			log.warn("Proceeding shutdown job...");

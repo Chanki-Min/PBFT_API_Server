@@ -33,6 +33,7 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     public static final String BUFFERED_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.isHashListInclude";
     public static final String BUFFERED_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.timeout.millis";
     public static final String BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.poll.interval.millis";
+    public static final String BUFFERED_CONSUMER_TYPE = "Buffered";
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -83,9 +84,6 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
             while (true) {
                 long start = System.currentTimeMillis();
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((long) bufferedClientConfigs.get(BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS)));
-                consumerDataService.setData(consumer.subscription().stream().findFirst().get(),
-                        (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS),
-                        (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
                 unconsumedTime += System.currentTimeMillis() - start;
                 //TIMEOUT_MILLIS까지 새로운 레코드가 오지 않는다면 지금까지 받아온 레코드로 블록을 만들고 오프셋을 커밋한다
                 if(unconsumedTime > ((int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS)) && records.isEmpty()){
@@ -211,5 +209,11 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
         client.request(insertRequestMsg);
         int blockNumber = (int) client.getReply();
         return blockNumber;
+    }
+
+    public ConsumerData getConsumerData(){
+        ConsumerData consumerData = new ConsumerData(BUFFERED_CONSUMER_TYPE,(int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS),
+                (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
+        return consumerData;
     }
 }

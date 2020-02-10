@@ -25,6 +25,6 @@ public class ConsumerDataController {
     @RequestMapping(value = "/consumer/getMetadata")
     @ResponseBody
     public Map<String, ConsumerData> getAllConsumerData() {
-        return consumerDataService.getConsumerDataMap();
+        return consumerDataService.getConsumerList();
     }
 }

@@ -74,16 +74,15 @@ public class KafkaAdminController {
      *
      * @Author 이혁수, 최상현
      */
-    @PostMapping("/topic/create/buf")
+    @PostMapping("/consumer/create/buf")
     @ResponseBody
     public String createBuffConsumer(@RequestBody ConsumerBufferConfigs configs) {
         int topicListSize = configs.getBuffTopicName().size();
         if (topicListSize == 1) {
             String topicName = configs.getBuffTopicName().get(0);
-            if (!checkTopic(topicName)) {
+            if (!consumerDataService.checkTopic(topicName)) {
                 BufferedConsumingPbftClient bufferedConsumingPbftClient =
                         consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
-				statusService.addBufferStatus(configs);
                 consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
                 // TODO : client 객체 db에 삽입.
@@ -96,16 +95,15 @@ public class KafkaAdminController {
         }
     }
 
-    @PostMapping("/topic/create/imme")
+    @PostMapping("/consumer/create/imme")
     @ResponseBody
     public String createImmediateConsumer(@RequestBody ConsumerImmediateConfigs configs) {
         int topicListSize = configs.getImmediateTopicName().size();
         if (topicListSize == 1) {
             String topicName = configs.getImmediateTopicName().get(0);
-            if (!checkTopic(topicName)) {
+            if (!consumerDataService.checkTopic(topicName)) {
                 ImmediateConsumingPbftClient immediateConsumingPbftClient =
-                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getImmeConfigs());
-				statusService.addImmediateStatus(configs);
+                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getConImmeConfigs());
                 consumerDataService.setConsumer(topicName,immediateConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer);
                 return String.format("New Immediate Consumer added!");
@@ -135,20 +133,17 @@ public class KafkaAdminController {
      *
      * @Author 이혁수
      */
-    @PostMapping("/topic/change/buf")
+    @PostMapping("/consumer/change/buf")
     @ResponseBody
     public String changeBuffConsumer(@RequestBody ConsumerBufferConfigs configs) throws Exception {
         int topicListSize = configs.getBuffTopicName().size();
         if (topicListSize == 1) {
             String topicName = configs.getBuffTopicName().get(0);
-            if (checkTopic(topicName)) {
-                statusService.deleteBufferStatus(configs);
-                consumerDataService.getConsumerMap().get(topicName).destroy();
-                consumerDataService.getConsumerMap().remove(topicName);
-                consumerDataService.getConsumerDataMap().remove(topicName);
+            if (consumerDataService.checkTopic(topicName)) {
+                consumerDataService.consumerShutdown(topicName);
+                consumerDataService.deleteData(topicName);
                 BufferedConsumingPbftClient bufferedConsumingPbftClient =
                         consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
-                statusService.addBufferStatus(configs);
                 consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
                 log.info("Buffer Consumer has been changed");
@@ -162,7 +157,7 @@ public class KafkaAdminController {
     }
 
     //TODO : 권한 인증
-    @PostMapping(value = "/topic/describe")
+    @PostMapping(value = "/consumer/describe")
     @ResponseBody
     public String describeTopicRequest() {
         /*
@@ -217,39 +212,15 @@ public class KafkaAdminController {
      *
      * @Author 이혁수
      */
-    @RequestMapping(value = "/consumer/buffer/shutdown")
+    @RequestMapping(value = "/consumer/shutdown")
     @ResponseBody
     public String shutdownBuffer(@RequestParam(value = "topicName", required = true, defaultValue = "") String topicName) throws Exception {
-        if (checkTopic(topicName)) {
-            statusService.deleteBufferStatus(topicName);
-            consumerDataService.getConsumerMap().get(topicName).destroy();
-            consumerDataService.getConsumerMap().remove(topicName);
-            consumerDataService.getConsumerDataMap().remove(topicName);
-            log.info("Request - shutdown buffered consumer : " + topicName);
-            return "Request - shutdown buffered consumer : " + topicName;
+        if (consumerDataService.checkTopic(topicName)) {
+            consumerDataService.consumerShutdown(topicName);
+            consumerDataService.deleteData(topicName);
+            return "Request - shutdown consumer : " + topicName;
         } else {
             return String.format("Check the topic name");
         }
-    }
-
-    @RequestMapping(value = "/consumer/immediate/shutdown")
-    @ResponseBody
-    public String shutdownImmediate(@RequestParam(value = "topicName", required = true, defaultValue = "") String topicName) throws Exception {
-        if (checkTopic(topicName)) {
-            statusService.deleteImmediateStatus(topicName);
-            consumerDataService.getConsumerMap().get(topicName).destroy();
-            consumerDataService.getConsumerMap().remove(topicName);
-            consumerDataService.getConsumerDataMap().remove(topicName);
-            log.info("Request - shutdown buffered consumer : " + topicName);
-            return "Request - shutdown immediate consumer : " + topicName;
-        } else {
-            return String.format("Check the topic name");
-        }
-    }
-
-    public boolean checkTopic(String topicName) {
-        boolean check;
-        check = consumerDataService.getConsumerMap().containsKey(topicName);
-        return check;
     }
 }

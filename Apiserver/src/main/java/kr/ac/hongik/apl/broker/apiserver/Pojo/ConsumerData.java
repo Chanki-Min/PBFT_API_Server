@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 public class ConsumerData {
 /*    센서인지 공정인지 (그 외)인지, 컨슈머 종류의 이름 제공 */
-    public Integer timeout;
-
-    public Integer minbatch;
+    public String consumerType;
+    public int timeout;
+    public int minbatch;
 
 }

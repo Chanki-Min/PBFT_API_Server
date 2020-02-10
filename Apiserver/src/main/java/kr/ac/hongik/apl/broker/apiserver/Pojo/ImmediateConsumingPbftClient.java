@@ -31,7 +31,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     public static final String IMMEDIATE_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.immediate.isHashListInclude";
     public static final String IMMEDIATE_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.immediate.timeout.millis";
     public static final String IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.immediate.poll.interval.millis";
-
+    public static final String IMMEDIATE_CONSUMER_TYPE = "Immediate";
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private KafkaConsumer<String, Object> consumer = null;
@@ -82,8 +82,6 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
                 // 이 블럭은 제대로 실행되는지 확인하기 위한 코드임
                 long start = System.currentTimeMillis();
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis((Long) immediateConsumerConfigs.get(IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS)));
-                consumerDataService.setData(consumer.subscription().stream().findFirst().get(),
-                        (Integer)immediateConsumerConfigs.get(IMMEDIATE_CONSUMER_TIMEOUT_MILLIS));
                 unconsumedTime += System.currentTimeMillis() - start;
                 if (unconsumedTime > ((int) immediateConsumerConfigs.get(IMMEDIATE_CONSUMER_TIMEOUT_MILLIS))) {
                     unconsumedTime = 0;
@@ -189,5 +187,10 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
         client.request(insertRequestMsg);
         int blockNumber = (int) client.getReply();
         return blockNumber;
+    }
+
+    public ConsumerData getConsumerData(){
+        ConsumerData consumerData = new ConsumerData(IMMEDIATE_CONSUMER_TYPE,(int) immediateConsumerConfigs.get(IMMEDIATE_CONSUMER_TIMEOUT_MILLIS), 0);
+        return consumerData;
     }
 }

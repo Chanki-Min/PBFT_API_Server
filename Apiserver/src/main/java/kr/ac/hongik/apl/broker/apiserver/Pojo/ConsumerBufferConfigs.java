@@ -1,8 +1,5 @@
 package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;

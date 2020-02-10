@@ -31,4 +31,6 @@ public interface ConsumingPbftClient {
 	 * 객체를 멈추기 위해 실행할 로직을 작성합니다
 	 */
 	public abstract void destroy() throws Exception;
+
+	public abstract ConsumerData getConsumerData();
 }
