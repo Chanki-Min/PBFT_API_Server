@@ -37,13 +37,6 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private KafkaConsumer<String, Object> consumer = null;
 
-    private ConsumerInfo immediateConsumerInfo = new ConsumerInfo();
-
-    private String newTopicName = null;
-    private int newSize = 0;
-    private int newTimeout = 0;
-
-
     private Map<String, Object> consumerConfigs;
 
     private Map<String, Object> immediateConsumerConfigs;
@@ -73,7 +66,7 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     }
 
     @Override
-    public ConsumerInfo startConsumer() {
+    public Exception startConsumer() {
         try {
             log.info("Start ConsumingPbftClientBuffer service");
             consumer = new KafkaConsumer<>(consumerConfigs);
@@ -113,31 +106,14 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
         } catch (WakeupException e) {
             // 정상적으로 아토믹 불리언이 false이라면 예외를 무시하고 종료한다
             if (!closed.get()) {
-                immediateConsumerInfo.setError(true);
-                immediateConsumerInfo.setException(e);
-                // TODO : 설정 플래그 초기화 여부 해결
                 throw e;
             }
         } catch (Exception e){
-            immediateConsumerInfo.setError(true);
-            immediateConsumerInfo.setException(e);
-            // TODO : 설정 플래그 초기화 여부 해결
-            throw e;
+            return e;
         } finally {
-            immediateConsumerInfo.setMinBatchSize(0);
-            immediateConsumerInfo.setTopicName(consumer.subscription().toString());
-            immediateConsumerInfo.setTimeout((Integer)immediateConsumerConfigs.get(IMMEDIATE_CONSUMER_TIMEOUT_MILLIS));
-            // TODO : db에 삽입
-            consumerDataService.deleteData(consumer.subscription().toString());
             consumer.close();
-
-            if(immediateConsumerInfo.isSettings()){
-                immediateConsumerInfo.setTopicName(newTopicName);
-                immediateConsumerInfo.setMinBatchSize(newSize);
-                immediateConsumerInfo.setTimeout(newTimeout);
-            }
         }
-        return immediateConsumerInfo;
+        return null;
     }
 
     @Override
@@ -195,30 +171,10 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        asyncExecutionService.runAsConsumerExecutor(this::startConsumer,immediateConsumerInfo);
+        asyncExecutionService.runAsConsumerExecutor(this::startConsumer);
     }
 
     public void destroy() throws Exception {
-        immediateConsumerInfo.setShutdown(true);
-        this.shutdownConsumer();
-    }
-
-    /**
-     * 케이스 번호가 0 즉, 설정을 동적으로 변경하고자 하면,
-     * 먼저 finally에서 객체 정보를 db에 저장하고,
-     * 넘겨받은 인자들을 기존 객체에 쓴 후,
-     * 그 객체를 반환 후, 재가동 시 그대로 쓴다.
-     *
-     * @param topicName
-     * @param minBatchSize
-     * @param timeout
-     * @throws Exception
-     */
-    public void acceptConsumerSettings(String topicName, int minBatchSize, int timeout) throws Exception {
-        immediateConsumerInfo.setSettings(true);
-        newTopicName = topicName;
-        newSize = minBatchSize;
-        newTimeout = timeout;
         this.shutdownConsumer();
     }
 

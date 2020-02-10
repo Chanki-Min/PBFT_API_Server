@@ -1,6 +1,5 @@
 package kr.ac.hongik.apl.broker.apiserver.Service.Consumer;
 
-import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerInfo;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -13,7 +12,7 @@ public interface ConsumingPbftClient extends InitializingBean, DisposableBean {
 	 * 컨슈머가 돌아가지 않고 있다면, 컨슈머 객체를 생성하고, loop를 돌면서 poll() 하고 일정 조건 만족시 execute()를 호출합니다
 	 * @return
 	 */
-	public abstract ConsumerInfo startConsumer();
+	public abstract Exception startConsumer();
 
 	/**
 	 * 조건 만족시 실제 실행 로직은 여기에 작성한다
@@ -36,6 +35,4 @@ public interface ConsumingPbftClient extends InitializingBean, DisposableBean {
 	 */
 	@Override
 	public abstract void destroy() throws Exception;
-
-	public abstract void acceptConsumerSettings(String topicname, int minbatchsize, int timeout) throws Exception;
 }

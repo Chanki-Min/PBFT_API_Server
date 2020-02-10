@@ -19,13 +19,12 @@ import java.util.Map;
  *
  * @Author 최상현
  */
-@Getter @Setter
+@Getter
 public class ConsumerImmediateConfigs {
     public static final String IMMEDIATE_CONSUMER_TOPICS = "kafka.listener.service.immediate.topic";
     public static final String IMMEDIATE_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.immediate.isHashListInclude";
     public static final String IMMEDIATE_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.immediate.timeout.millis";
     public static final String IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.immediate.poll.interval.millis";
-
     // common configs
     List<String> bootstrapServersConfig;
 
@@ -51,7 +50,6 @@ public class ConsumerImmediateConfigs {
         this.immediateTimeoutMillis = immediateTimeoutMillis;
         this.immediatePollIntervalMillis = immediatePollIntervalMillis;
     }
-
 
     public Map<String, Object> getCommonConfigs() {
         return getStringObjectMap(bootstrapServersConfig, autoCommitConfig, groupIdConfig,

@@ -1,5 +1,7 @@
 package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
+import lombok.Getter;
+import lombok.Setter;
 
 import lombok.Data;
 import lombok.Getter;
@@ -21,14 +23,13 @@ import static kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerImmediateConfigs.ge
  *
  * @author 최상현
  */
-@Getter @Setter
+@Getter
 public class ConsumerBufferConfigs {
     public static final String BUFFERED_CONSUMER_TOPICS = "kafka.listener.service.topic";
     public static final String BUFFERED_CONSUMER_MIN_BATCH_SIZE = "kafka.listener.service.minBatchSize";
     public static final String BUFFERED_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.isHashListInclude";
     public static final String BUFFERED_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.timeout.millis";
     public static final String BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.poll.interval.millis";
-
     // common configs
     List<String> bootstrapServersConfig;
     Boolean autoCommitConfig;
@@ -42,22 +43,21 @@ public class ConsumerBufferConfigs {
     int buffTimeoutMillis;
     long buffPollIntervalMillis;
 
-
-//    /**
-//     * @param bootstrapServersConfig
-//     * @param autoCommitConfig
-//     * @param groupIdConfig
-//     * @param buffTopicName
-//     * @param buffMinBatchSize
-//     * @param buffIsHashListInclude
-//     * @param buffTimeoutMillis
-//     * @param buffPollIntervalMillis
-//     * Allargs 어노테이션을 활용하지않고 생성자를 지정한 이유는
-//     * keyDeserializeClassConfig와 valuesDeserializerClassConfig 는 JSON 으로 받기엔
-//     * 힘든 class 객체를 참조하여야하기 때문임.
-//     * 이 사항은 ConsumerImmediateConfigs 에서도 동일.
-//     *
-//     */
+    /**
+     * @param bootstrapServersConfig
+     * @param autoCommitConfig
+     * @param groupIdConfig
+     * @param buffTopicName
+     * @param buffMinBatchSize
+     * @param buffIsHashListInclude
+     * @param buffTimeoutMillis
+     * @param buffPollIntervalMillis
+     * Allargs 어노테이션을 활용하지않고 생성자를 지정한 이유는
+     * keyDeserializeClassConfig와 valuesDeserializerClassConfig 는 JSON 으로 받기엔
+     * 힘든 class 객체를 참조하여야하기 때문임.
+     * 이 사항은 ConsumerImmediateConfigs 에서도 동일.
+     *
+     */
     public ConsumerBufferConfigs(List<String> bootstrapServersConfig, Boolean autoCommitConfig, String groupIdConfig,
                                  List<String> buffTopicName, int buffMinBatchSize,
                                  Boolean buffIsHashListInclude, int buffTimeoutMillis, long buffPollIntervalMillis) {
@@ -73,7 +73,6 @@ public class ConsumerBufferConfigs {
         this.buffTimeoutMillis = buffTimeoutMillis;
         this.buffPollIntervalMillis = buffPollIntervalMillis;
     }
-
 
     /**
      * @return getStringObjectMap 은 ConsumerImmediateConfigs 에 선언되어있는 함수임.

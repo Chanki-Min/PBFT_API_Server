@@ -35,17 +35,9 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     public static final String BUFFERED_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.timeout.millis";
     public static final String BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.poll.interval.millis";
 
-
-
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private KafkaConsumer<String, Object> consumer = null;
-
-    private ConsumerInfo bufferedConsumerInfo = new ConsumerInfo();
-
-    private String newTopicName = null;
-    private int newSize = 0;
-    private int newTimeout = 0;
 
     private Map<String, Object> consumerConfigs;
     private Map<String, Object> bufferedClientConfigs;
@@ -75,13 +67,12 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     }
 
     @Override
-    public ConsumerInfo startConsumer() {
+    public Exception startConsumer() {
         try {
             log.info("Start ConsumingPbftClientBuffer service");
             consumer = new KafkaConsumer<>(consumerConfigs);
             consumer.subscribe((Collection<String>) bufferedClientConfigs.get(BUFFERED_CONSUMER_TOPICS));
 
-            //TODO : 이 컨슈머는 각 토픽당 파티션이 1개라는 가정 하에 동작을 보증한다
             TopicPartition latestPartition = null;
             long lastOffset=0;
             long unconsumedTime = 0;
@@ -131,34 +122,19 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                         }
                     }
                 }
-//                this.shutdownConsumer();
             }
         } catch (WakeupException e) {
             // 정상적으로 아토믹 불리언이 false이라면 예외를 무시하고 종료한다
             if (!closed.get()) {
-                bufferedConsumerInfo.setError(true);
-                bufferedConsumerInfo.setException(e);
                 throw e;
             }
         } catch (Exception e){
-            bufferedConsumerInfo.setError(true);
-            bufferedConsumerInfo.setException(e);
-            throw e;
+            return e;
         } finally {
-            bufferedConsumerInfo.setTopicName(consumer.subscription().toString());
-            bufferedConsumerInfo.setMinBatchSize((Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
-            bufferedConsumerInfo.setTimeout((Integer)bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS));
-            // TODO : db에 삽입
-            consumerDataService.deleteData(consumer.subscription().toString());
-//            구독하는 토픽은 컨슈머당 1개뿐이라 가정. 그대로 스트링화 하였음.
+            //구독하는 토픽은 컨슈머당 1개뿐이라 가정. 그대로 스트링화 하였음.
             consumer.close();
-            if(bufferedConsumerInfo.isSettings()){
-                bufferedConsumerInfo.setTopicName(newTopicName);
-                bufferedConsumerInfo.setMinBatchSize(newSize);
-                bufferedConsumerInfo.setTimeout(newTimeout);
-            }
         }
-        return bufferedConsumerInfo;
+        return null;
     }
 
     @Override
@@ -216,31 +192,11 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        asyncExecutionService.runAsConsumerExecutor(this::startConsumer,bufferedConsumerInfo);
+        asyncExecutionService.runAsConsumerExecutor(this::startConsumer);
     }
 
     @Override
     public void destroy() throws Exception {
-        bufferedConsumerInfo.setShutdown(true);
-        this.shutdownConsumer();
-    }
-
-    /**
-     * 케이스 번호가 0 즉, 설정을 동적으로 변경하고자 하면,
-     * 먼저 finally에서 객체 정보를 db에 저장하고, ( 고민 해봐야함 )
-     * 넘겨받은 인자들을 기존 객체에 쓴 후,
-     * 그 객체를 반환 후, 재가동 시 그대로 쓴다.
-     *
-     * @param topicName
-     * @param minBatchSize
-     * @param timeout
-     * @throws Exception
-     */
-    public void acceptConsumerSettings(String topicName, int minBatchSize, int timeout) throws Exception {
-        bufferedConsumerInfo.setSettings(true);
-        newTopicName = topicName;
-        newSize = minBatchSize;
-        newTimeout = timeout;
         this.shutdownConsumer();
     }
 

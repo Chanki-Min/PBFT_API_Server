@@ -21,6 +21,7 @@ public class ConsumerDataController {
         this.consumerDataService = consumerDataService;
     }
 
+    //TODO : consumerDataMap 말고 consumerMap에서 가져오기
     @RequestMapping(value = "/consumer/getMetadata")
     @ResponseBody
     public Map<String, ConsumerData> getAllConsumerData() {
