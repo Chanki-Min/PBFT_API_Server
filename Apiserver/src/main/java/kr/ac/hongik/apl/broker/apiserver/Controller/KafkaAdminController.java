@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.ac.hongik.apl.broker.apiserver.Pojo.*;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerFactoryService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Sqlite.StatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.KafkaFuture;
@@ -32,23 +33,31 @@ public class KafkaAdminController {
 	/*
 	* Kafka의 토픽 생성, 삭제 관리를 처리하는 KafkaAdmin 객체를 오토와이어 해줍니다
 	 */
-	@Autowired
 	KafkaAdmin kafkaAdmin;
 
-	@Autowired
 	ObjectMapper objectMapper;
 
-	@Autowired
 	ConsumerFactoryService consumerFactoryService;
 
-	@Autowired
 	AsyncExecutionService asyncExecutionService;
+
+	StatusService statusService;
+
+	@Autowired
+	public KafkaAdminController(KafkaAdmin kafkaAdmin, ObjectMapper objectMapper, ConsumerFactoryService consumerFactoryService, AsyncExecutionService asyncExecutionService, StatusService statusService) {
+		this.kafkaAdmin = kafkaAdmin;
+		this.objectMapper = objectMapper;
+		this.consumerFactoryService = consumerFactoryService;
+		this.asyncExecutionService = asyncExecutionService;
+		this.statusService = statusService;
+	}
 
 	@PostMapping("/topic/create/buf")
 	@ResponseBody
-	public String createBuffConsumer(@RequestBody ConsumerBufferConfigs configs) {
+	public String createBuffConsumer(@RequestBody ConsumerBufferConfigs configs) throws JsonProcessingException {
 		BufferedConsumingPbftClient bufferedConsumingPbftClient =
 				consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(),configs.getBuffConfigs());
+		statusService.addBufferStatus(configs);
 //TODO: NULL 지우고 혁수형과 의논
 		asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer, null);
 		return String.format("New Buffer Consumer added!");
@@ -56,9 +65,10 @@ public class KafkaAdminController {
 
 	@PostMapping("/topic/create/imme")
 	@ResponseBody
-	public String createImmediateConsumer(@RequestBody ConsumerImmediateConfigs configs) {
+	public String createImmediateConsumer(@RequestBody ConsumerImmediateConfigs configs) throws JsonProcessingException {
 		ImmediateConsumingPbftClient immediateConsumingPbftClient =
 				consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(),configs.getConImmeConfigs());
+		statusService.addImmediateStatus(configs);
 		asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer, null);
 		return String.format("New Immediate Consumer added!");
 	}

@@ -11,7 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Getter
 public class ConsumerDataService {
-    private ConcurrentHashMap<String, ConsumerData> ConsumerDataMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ConsumerData> ConsumerDataMap;
+
+    public ConsumerDataService() {
+        ConsumerDataMap = new ConcurrentHashMap<>();
+    }
 
     public void setData(String subscription, int timeout, int minBatchSize) {
         ConsumerData consumerData = new ConsumerData(timeout,minBatchSize);

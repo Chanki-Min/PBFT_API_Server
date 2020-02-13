@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ac.hongik.apl.broker.apiserver.Service.Sqlite.StatusMapper">
+
+    <select id="selectAllBufferStatus" resultType="kr.ac.hongik.apl.broker.apiserver.Pojo.DBConsumerBufferConfigs">
+        SELECT bootstrapServersConfig
+            ,autoCommitConfig
+            ,groupIdConfig
+            ,buffTopicName
+            ,buffMinBatchSize
+            ,buffIsHashListInclude
+            ,buffTimeoutMillis
+            ,buffPollIntervalMillis
+        FROM ConsumerStatus
+        WHERE consumerType=0
+    </select>
+
+    <insert id="insertBufferStatus" >
+        INSERT INTO ConsumerStatus (bootstrapServersConfig, autoCommitConfig, groupIdConfig, buffTopicName, buffMinBatchSize, buffIsHashListInclude, buffTimeoutMillis, buffPollIntervalMillis, consumerType)
+        VALUES (#{jsonConfigs}, #{status.autoCommitConfig}, #{status.groupIdConfig}, #{jsonTopicName}, #{status.buffMinBatchSize}, #{status.buffIsHashListInclude}, #{status.buffTimeoutMillis}, #{status.buffPollIntervalMillis}, 0)
+    </insert>
+
+    <delete id="deleteBufferStatus" parameterType="String">
+        DELETE FROM ConsumerStatus
+        WHERE consumerType=0 AND buffTopicName = #{topicName}
+    </delete>
+
+    <select id="selectAllImmediateStatus" resultType="kr.ac.hongik.apl.broker.apiserver.Pojo.DBConsumerImmediateConfigs">
+        SELECT bootstrapServersConfig
+             ,autoCommitConfig
+             ,groupIdConfig
+             ,immediateTopicName
+             ,immediateIsHashListInclude
+             ,immediateTimeoutMillis
+             ,immediatePollIntervalMillis
+        FROM ConsumerStatus
+        WHERE consumerType=1
+    </select>
+
+    <insert id="insertImmediateStatus">
+        INSERT INTO ConsumerStatus (bootstrapServersConfig, autoCommitConfig, groupIdConfig, immediateTopicName, immediateIsHashListInclude, immediateTimeoutMillis, immediatePollIntervalMillis, consumerType)
+        VALUES (#{jsonConfigs}, #{status.autoCommitConfig}, #{status.groupIdConfig}, #{jsonTopicName}, #{status.immediateIsHashListInclude}, #{status.immediateTimeoutMillis}, #{status.immediatePollIntervalMillis},1)
+    </insert>
+
+    <delete id="deleteImmediateStatus" parameterType="String">
+        DELETE FROM ConsumerStatus
+        WHERE consumerType=1 AND immediateTopicName = #{topicName}
+    </delete>
+</mapper>

@@ -1,5 +1,10 @@
 package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
@@ -14,11 +19,13 @@ import java.util.Map;
  *
  * @Author 최상현
  */
+@Getter @Setter
 public class ConsumerImmediateConfigs {
     public static final String IMMEDIATE_CONSUMER_TOPICS = "kafka.listener.service.immediate.topic";
     public static final String IMMEDIATE_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.immediate.isHashListInclude";
     public static final String IMMEDIATE_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.immediate.timeout.millis";
     public static final String IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.immediate.poll.interval.millis";
+
     // common configs
     List<String> bootstrapServersConfig;
 
@@ -32,11 +39,9 @@ public class ConsumerImmediateConfigs {
     int immediateTimeoutMillis;
     long immediatePollIntervalMillis;
 
-    public ConsumerImmediateConfigs(List<String> bootstrapServersConfig, Boolean autoCommitConfig, String groupIdConfig,
-                                    List<String> immediateTopicName, Boolean immediateIsHashListInclude,
-                                    int immediateTimeoutMillis, long immediatePollIntervalMillis) {
-        this.bootstrapServersConfig = bootstrapServersConfig;
 
+    public ConsumerImmediateConfigs(List<String> bootstrapServersConfig, Boolean autoCommitConfig, String groupIdConfig, List<String> immediateTopicName, Boolean immediateIsHashListInclude, int immediateTimeoutMillis, long immediatePollIntervalMillis) throws JsonProcessingException {
+        this.bootstrapServersConfig = bootstrapServersConfig;
         this.autoCommitConfig = autoCommitConfig;
         this.groupIdConfig = groupIdConfig;
         this.keyDeserializerClassConfig = StringDeserializer.class;
@@ -46,6 +51,7 @@ public class ConsumerImmediateConfigs {
         this.immediateTimeoutMillis = immediateTimeoutMillis;
         this.immediatePollIntervalMillis = immediatePollIntervalMillis;
     }
+
 
     public Map<String, Object> getCommonConfigs() {
         return getStringObjectMap(bootstrapServersConfig, autoCommitConfig, groupIdConfig,
@@ -74,4 +80,21 @@ public class ConsumerImmediateConfigs {
 
         return immediateConfigs;
     }
+
+
+    @Override
+    public String toString() {
+        return "ImmediateStatus{" +
+                "bootstrapServersConfig=" + bootstrapServersConfig +
+                ", autoCommitConfig=" + autoCommitConfig +
+                ", groupIdConfig='" + groupIdConfig + '\'' +
+                ", keyDeserializerClassConfig=" + keyDeserializerClassConfig +
+                ", valuesDeserializerClassConfig=" + valuesDeserializerClassConfig +
+                ", immediateTopicName=" + immediateTopicName +
+                ", immediateIsHashListInclude=" + immediateIsHashListInclude +
+                ", immediateTimeoutMillis=" + immediateTimeoutMillis +
+                ", immediatePollIntervalMillis=" + immediatePollIntervalMillis +
+                '}';
+    }
+
 }
