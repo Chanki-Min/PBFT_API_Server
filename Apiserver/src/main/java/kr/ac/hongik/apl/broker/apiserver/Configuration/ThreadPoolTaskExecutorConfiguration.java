@@ -25,6 +25,11 @@ public class ThreadPoolTaskExecutorConfiguration {
 	public static final String SEARCH_RESULT_VERIFIER_THREAD_QUEUE_CAPACITY = "broker.searchResultVerifier.thread.queueCapacity";
 	public static final String SEARCH_RESULT_VERIFIER_THREAD_NAME_PREFIX ="broker.searchResultVerifier.thread.threadNamePrefix";
 
+	public static final String EXECUTE_THREAD_CORE_POOL_SIZE = "broker.execute.thread.corePoolSize";
+	public static final String EXECUTE_THREAD_MAX_POOL_SIZE = "broker.execute.thread.maxPoolSize";
+	public static final String EXECUTE_THREAD_QUEUE_CAPACITY = "broker.execute.thread.queueCapacity";
+	public static final String EXECUTE_THREAD_THREAD_NAME_PREFIX = "broker.execute.thread.threadNamePrefix";
+
 	@Autowired
 	Environment env;
 
@@ -87,6 +92,20 @@ public class ThreadPoolTaskExecutorConfiguration {
 				env.getProperty(SEARCH_RESULT_VERIFIER_THREAD_QUEUE_CAPACITY) == null ? Integer.MAX_VALUE : Integer.parseInt(Objects.requireNonNull(env.getProperty(SEARCH_RESULT_VERIFIER_THREAD_QUEUE_CAPACITY)))
 		);
 		taskExecutor.setThreadNamePrefix(env.getProperty(SEARCH_RESULT_VERIFIER_THREAD_NAME_PREFIX));
+		taskExecutor.initialize();
+		return taskExecutor;
+	}
+
+	@Bean(name = "executeThreadPool")
+	public Executor executeThreadPool(){
+		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+		taskExecutor.setCorePoolSize(Integer.parseInt(Objects.requireNonNull(env.getProperty(EXECUTE_THREAD_CORE_POOL_SIZE))));
+		taskExecutor.setMaxPoolSize(Integer.parseInt(Objects.requireNonNull(env.getProperty(EXECUTE_THREAD_MAX_POOL_SIZE))));
+		taskExecutor.setQueueCapacity(
+				env.getProperty(EXECUTE_THREAD_QUEUE_CAPACITY) == null ? Integer.MAX_VALUE : Integer.parseInt(Objects.requireNonNull(env.getProperty(EXECUTE_THREAD_QUEUE_CAPACITY)))
+		);
+		taskExecutor.setThreadNamePrefix(env.getProperty(EXECUTE_THREAD_THREAD_NAME_PREFIX));
+		taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		taskExecutor.initialize();
 		return taskExecutor;
 	}

@@ -13,6 +13,7 @@ import java.util.Map;
 @PropertySource("classpath:broker.properties")
 public class ContextClosedEventListenerConfiguration {
 	public static final String TOMCAT_TERMINATION_TIMEOUT_MILLIS = "broker.contextClosedEventListenerConfig.tomcat.timeout.millis";
+	public static final String EXECUTE_THREAD_AWIATTIME = "broker.execute.thread.awaitTime";
 	private final Environment env;
 
 	@Autowired
@@ -24,6 +25,7 @@ public class ContextClosedEventListenerConfiguration {
 	public Map<String, Object> contextClosedEventListenerConfig() {
 		Map<String, Object> configMap = new HashMap<>();
 		configMap.put(TOMCAT_TERMINATION_TIMEOUT_MILLIS, env.getProperty(TOMCAT_TERMINATION_TIMEOUT_MILLIS, int.class));
+		configMap.put(EXECUTE_THREAD_AWIATTIME, env.getProperty(EXECUTE_THREAD_AWIATTIME, int.class));
 
 		return configMap;
 	}

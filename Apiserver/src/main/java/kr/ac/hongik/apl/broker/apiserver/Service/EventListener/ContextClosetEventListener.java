@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -18,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import static kr.ac.hongik.apl.broker.apiserver.Configuration.ContextClosedEventListenerConfiguration.EXECUTE_THREAD_AWIATTIME;
 import static kr.ac.hongik.apl.broker.apiserver.Configuration.ContextClosedEventListenerConfiguration.TOMCAT_TERMINATION_TIMEOUT_MILLIS;
 
 /**
@@ -44,6 +47,10 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 		this.objectMapper = objectMapper;
 	}
 
+	@Autowired
+	@Qualifier(value = "executeThreadPool")
+	private Executor executeThreadPool;
+
 	/**
 	 * TomcatConnectorCustomizer의 요구 메소드. tomcat의 connector를 반환한다. 이것을 TomcatCustomizerConfiguration이 이용한다.
 	 *
@@ -67,7 +74,7 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 	@EventListener
 	public void shutdownGracefully(ContextClosedEvent event) {
 		int tomcatTerminationTimeoutMillis = (int) contextClosedEventListenerConfig.get(TOMCAT_TERMINATION_TIMEOUT_MILLIS);
-
+		int executeThreadAwaitTime =  (int) contextClosedEventListenerConfig.get(EXECUTE_THREAD_AWIATTIME);
 		log.info(String.format("Got ContextClosedEvent. try to shutdown server gracefully..."));
 		log.info("Shutting down tomcat web server...");
 		//Tomcat 이 더 이상의 request 를 받지 않도록 한다.
@@ -119,7 +126,20 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 			}
 		}
 		log.info("Running consumer threads shutdown COMPLETE");
-
-		//TODO : execution thread pool 를 정지해야 한다
+		/**
+		 * 블럭화를 진행하는 Execute 메소드를 한개의 전용 쓰레드가 모두 처리하기 떄문에
+		 * contextClosetEvent 가 발생하면, 즉 api 서버가 종료를 하면
+		 * 해당 쓰레드가 작업중인지를 확인하고
+		 * 작업이 끝나야만 쓰레드를 종료시킬 수 있도록 설정과
+		 * 작업이 끝나기에 충분한 만큼의 타임아웃 시간을 설정 후
+		 * shutdown 을 수행한다.
+		 */
+		log.info("Checking PBFT Execute Thread");
+		ThreadPoolTaskExecutor threadPoolTaskExecutor = (ThreadPoolTaskExecutor)executeThreadPool;
+		log.info(String.format("PBFT Execute Thread ActiveCount : %d",threadPoolTaskExecutor.getActiveCount()));
+		threadPoolTaskExecutor.setAwaitTerminationSeconds(executeThreadAwaitTime);
+		threadPoolTaskExecutor.shutdown();
+		//최대 TIMEOUT 동안 대기하며 threadpool의 모든 작업이 종료되었는지 확인한다. 만약 종료되지 못했다면 강제로 스탑한다.
+		log.info("PBFT Execute Service shutdown COMPLETE");
 	}
 }

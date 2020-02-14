@@ -97,8 +97,9 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
                             lastOffset = record.offset();
                             //Immediate Consumer는 각 레코드가 List<Map>인 것을 받아서 각 레코드를 받은 즉시 execute한다
                             buffer = (List<Map<String, Object>>) record.value();
-                            execute(buffer);
                             consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
+                            List<Map<String, Object>> finalBuffer = new ArrayList<>(buffer);
+                            asyncExecutionService.runAsExecuteExecutor(()->execute(finalBuffer));
                         }
                     }
                 } else {

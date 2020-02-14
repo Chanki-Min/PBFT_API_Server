@@ -91,10 +91,11 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                 if(unconsumedTime > ((int) bufferedClientConfigs.get(BUFFERED_CONSUMER_TIMEOUT_MILLIS)) && records.isEmpty()){
                     unconsumedTime = 0;
                     if(buffer.size() > 0){
-                        execute(buffer);
+                        consumer.commitSync(Collections.singletonMap(latestPartition,new OffsetAndMetadata(lastOffset+1))); // 오프셋 커밋
+                        List<Map<String, Object>> finalBuffer = new ArrayList<>(buffer);
+                        asyncExecutionService.runAsExecuteExecutor(()->execute(finalBuffer));
                         buffer.clear();
                         log.debug("unconsumedTime timeout, consumed uncompleted batch");
-                        consumer.commitSync(Collections.singletonMap(latestPartition,new OffsetAndMetadata(lastOffset+1))); // 오프셋 커밋
                     }
                     else{
                         log.debug("unconsumedTime timeout, has no data to make block.");
@@ -112,13 +113,14 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
 
                             //poll된 records로 하나씩 채워진 buffer가 1블록 사이즈를 달성했다면 소비하여 블록을 삽입한다
                             if (buffer.size() == (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE)) {
-                                execute(buffer);
                                 //마지막 데이터로 Ack를 보낸다
                                 Map<String, Object> last = buffer.get(buffer.size()-1);
+                                consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
+                                List<Map<String, Object>> finalBuffer = new ArrayList<>(buffer);
+                                asyncExecutionService.runAsExecuteExecutor(()->execute(finalBuffer));
                                 sendBlockInsertionAckService.sendLastData(last);
                                 buffer.clear();
                                 log.debug("consumed 1 batch");
-                                consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
                             }
                         }
                     }

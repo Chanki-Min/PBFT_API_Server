@@ -50,4 +50,9 @@ public class AsyncExecutionService {
     public void runAsSearchResultVerifierExecutor(Runnable runnable) {
         runnable.run();
     }
+
+    @Async(value = "executeThreadPool")
+    public void runAsExecuteExecutor(Runnable runnable) {
+        runnable.run();
+    }
 }
