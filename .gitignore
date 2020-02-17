@@ -32,3 +32,4 @@ build/
 
 ### API server
 logs
+/data/test.db

@@ -69,7 +69,7 @@ public class ConsumerImmediateConfigs {
         return commonConfigs;
     }
 
-    public Map<String, Object> getConImmeConfigs() {
+    public Map<String, Object> getImmeConfigs() {
         Map<String, Object> immediateConfigs = new HashMap<>();
         immediateConfigs.put(IMMEDIATE_CONSUMER_TOPICS,immediateTopicName);
         immediateConfigs.put(IMMEDIATE_CONSUMER_IS_HASHLIST_INCLUDE,immediateIsHashListInclude);

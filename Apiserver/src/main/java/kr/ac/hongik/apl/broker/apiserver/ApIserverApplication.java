@@ -1,37 +1,32 @@
 package kr.ac.hongik.apl.broker.apiserver;
 
-import kr.ac.hongik.apl.broker.apiserver.Pojo.BufferedConsumingPbftClient;
-import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerBufferConfigs;
-import kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerImmediateConfigs;
-
-import kr.ac.hongik.apl.broker.apiserver.Pojo.ImmediateConsumingPbftClient;
-import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
-import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerFactoryService;
-import kr.ac.hongik.apl.broker.apiserver.Service.Sqlite.StatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * ApplicationRunner Interface 를 이용하여 빈 주입 이후 최초 실행되어야하는 로직을 구현함.
+ * DB 에 저장되어있는 (실행되어야 할) Consumer 들의 Configs 들을 불러와 factoryService 를 이용하여 Consumer 객체를 생성한다.
+ * ConsumerDataService 객체에 해당 데이터를 저장하여 '실행후 생성과정없이' CONFIG 변경이나 CONSUMER 삭제를 시도하는 경우 발생할 예외를 방지하였다.
+ *
+ * @author 최상현
+ */
 @Slf4j
 @MapperScan(basePackages = "kr.ac.hongik.apl.broker.apiserver")
 @SpringBootApplication
 public class ApIserverApplication implements ApplicationRunner {
-	private final StatusService statusService;
-	private final ConsumerFactoryService consumerFactoryService;
-	private final AsyncExecutionService asyncExecutionService;
+
+	ApplicationContext applicationContext;
+
 	@Autowired
-	public ApIserverApplication(StatusService statusService, ConsumerFactoryService consumerFactoryService,AsyncExecutionService asyncExecutionService) {
-		this.statusService = statusService;
-		this.consumerFactoryService = consumerFactoryService;
-		this.asyncExecutionService = asyncExecutionService;
+	public ApIserverApplication(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
 	}
 
 	//TODO : shutdown 방법을 생각해야 한다 ref) https://www.baeldung.com/spring-boot-shutdown
@@ -39,25 +34,12 @@ public class ApIserverApplication implements ApplicationRunner {
 		SpringApplication.run(ApIserverApplication.class, args);
 	}
 
+	/**
+	 * Event start 하면 ContextStartedEvent : ApplicationContext를 start()하여 라이프사이클 빈들이 시작 신호를 받은 시점에 발생
+	 * @see kr.ac.hongik.apl.broker.apiserver.Service.EventListener.ContextStartedEventListener
+	 */
 	@Override
-	public void run(ApplicationArguments args) throws Exception {
-
-		List<ConsumerBufferConfigs> bufferStatusList = statusService.getBufferStatus();
-
-		for( ConsumerBufferConfigs config : bufferStatusList){
-			log.info(config.getBuffTopicName().toString()+" is turned ON");
-			BufferedConsumingPbftClient bufferedConsumingPbftClient =
-					consumerFactoryService.MakeBufferedConsumer(config.getCommonConfigs(),config.getBuffConfigs());
-			asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer, null);
-		}
-
-		List<ConsumerImmediateConfigs> immediateConfigs = statusService.getImmediateStatus();
-
-		for( ConsumerImmediateConfigs config : immediateConfigs){
-			log.info(config.getImmediateTopicName().toString()+" is turned ON");
-			ImmediateConsumingPbftClient immediateConsumingPbftClient =
-					consumerFactoryService.MakeImmediateConsumer(config.getCommonConfigs(),config.getConImmeConfigs());
-			asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer, null);
-		}
+	public void run(ApplicationArguments args) {
+		((ConfigurableApplicationContext)applicationContext).start();
 	}
 }

@@ -9,6 +9,7 @@ import kr.ac.hongik.apl.broker.apiserver.Pojo.*;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerDataService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerFactoryService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Sqlite.StatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.KafkaFuture;
@@ -30,23 +31,28 @@ public class KafkaAdminController {
     /*
      * Kafka의 토픽 생성, 삭제 관리를 처리하는 KafkaAdmin 객체를 오토와이어 해줍니다
      */
-    @Autowired
+
     private KafkaAdmin kafkaAdmin;
 
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
     private ConsumerFactoryService consumerFactoryService;
 
-    @Autowired
     private AsyncExecutionService asyncExecutionService;
 
-    @Autowired
     private ConsumerDataService consumerDataService;
 
-    @Autowired
 	private StatusService statusService;
+
+	@Autowired
+    public KafkaAdminController(KafkaAdmin kafkaAdmin, ObjectMapper objectMapper, ConsumerFactoryService consumerFactoryService, AsyncExecutionService asyncExecutionService, ConsumerDataService consumerDataService, StatusService statusService) {
+        this.kafkaAdmin = kafkaAdmin;
+        this.objectMapper = objectMapper;
+        this.consumerFactoryService = consumerFactoryService;
+        this.asyncExecutionService = asyncExecutionService;
+        this.consumerDataService = consumerDataService;
+        this.statusService = statusService;
+    }
 
     /**
      * request 로 컨슈머 정보가 api에 전달을 받으면
@@ -98,7 +104,7 @@ public class KafkaAdminController {
             String topicName = configs.getImmediateTopicName().get(0);
             if (!checkTopic(topicName)) {
                 ImmediateConsumingPbftClient immediateConsumingPbftClient =
-                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getConImmeConfigs());
+                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getImmeConfigs());
 				statusService.addImmediateStatus(configs);
                 consumerDataService.setConsumer(topicName,immediateConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer);
@@ -136,11 +142,13 @@ public class KafkaAdminController {
         if (topicListSize == 1) {
             String topicName = configs.getBuffTopicName().get(0);
             if (checkTopic(topicName)) {
+                statusService.deleteBufferStatus(configs);
                 consumerDataService.getConsumerMap().get(topicName).destroy();
                 consumerDataService.getConsumerMap().remove(topicName);
                 consumerDataService.getConsumerDataMap().remove(topicName);
                 BufferedConsumingPbftClient bufferedConsumingPbftClient =
                         consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
+                statusService.addBufferStatus(configs);
                 consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
                 log.info("Buffer Consumer has been changed");
@@ -213,6 +221,7 @@ public class KafkaAdminController {
     @ResponseBody
     public String shutdownBuffer(@RequestParam(value = "topicName", required = true, defaultValue = "") String topicName) throws Exception {
         if (checkTopic(topicName)) {
+            statusService.deleteBufferStatus(topicName);
             consumerDataService.getConsumerMap().get(topicName).destroy();
             consumerDataService.getConsumerMap().remove(topicName);
             consumerDataService.getConsumerDataMap().remove(topicName);
@@ -227,6 +236,7 @@ public class KafkaAdminController {
     @ResponseBody
     public String shutdownImmediate(@RequestParam(value = "topicName", required = true, defaultValue = "") String topicName) throws Exception {
         if (checkTopic(topicName)) {
+            statusService.deleteImmediateStatus(topicName);
             consumerDataService.getConsumerMap().get(topicName).destroy();
             consumerDataService.getConsumerMap().remove(topicName);
             consumerDataService.getConsumerDataMap().remove(topicName);
