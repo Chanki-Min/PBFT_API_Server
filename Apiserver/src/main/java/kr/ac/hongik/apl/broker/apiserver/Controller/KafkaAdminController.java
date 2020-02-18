@@ -83,6 +83,7 @@ public class KafkaAdminController {
             if (!consumerDataService.checkTopic(topicName)) {
                 BufferedConsumingPbftClient bufferedConsumingPbftClient =
                         consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
+                statusService.addBufferStatus(configs);
                 consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
                 // TODO : client 객체 db에 삽입.
@@ -104,6 +105,7 @@ public class KafkaAdminController {
             if (!consumerDataService.checkTopic(topicName)) {
                 ImmediateConsumingPbftClient immediateConsumingPbftClient =
                         consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getImmeConfigs());
+                statusService.addImmediateStatus(configs);
                 consumerDataService.setConsumer(topicName,immediateConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer);
                 return String.format("New Immediate Consumer added!");
@@ -136,14 +138,23 @@ public class KafkaAdminController {
     @PostMapping("/consumer/change/buf")
     @ResponseBody
     public String changeBuffConsumer(@RequestBody ConsumerBufferConfigs configs) throws Exception {
+
+        log.info(configs.toString());
+        if(configs.checkFieldsNull())
+        {
+            return String.format("you've missed some of fields. try again");
+        }
+
         int topicListSize = configs.getBuffTopicName().size();
         if (topicListSize == 1) {
             String topicName = configs.getBuffTopicName().get(0);
             if (consumerDataService.checkTopic(topicName)) {
+                statusService.deleteBufferStatus(configs);
                 consumerDataService.consumerShutdown(topicName);
                 consumerDataService.deleteData(topicName);
                 BufferedConsumingPbftClient bufferedConsumingPbftClient =
                         consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
+                statusService.addBufferStatus(configs);
                 consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
                 log.info("Buffer Consumer has been changed");
@@ -216,6 +227,7 @@ public class KafkaAdminController {
     @ResponseBody
     public String shutdownBuffer(@RequestParam(value = "topicName", required = true, defaultValue = "") String topicName) throws Exception {
         if (consumerDataService.checkTopic(topicName)) {
+            statusService.deleteBufferStatus(topicName);
             consumerDataService.consumerShutdown(topicName);
             consumerDataService.deleteData(topicName);
             return "Request - shutdown consumer : " + topicName;

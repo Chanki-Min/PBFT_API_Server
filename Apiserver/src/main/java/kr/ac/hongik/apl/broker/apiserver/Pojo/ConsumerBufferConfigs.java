@@ -2,7 +2,9 @@ package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
@@ -20,6 +22,7 @@ import static kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerImmediateConfigs.ge
  *
  * @author 최상현
  */
+@Slf4j
 @Getter
 public class ConsumerBufferConfigs {
     public static final String BUFFERED_CONSUMER_TOPICS = "kafka.listener.service.topic";
@@ -28,17 +31,17 @@ public class ConsumerBufferConfigs {
     public static final String BUFFERED_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.timeout.millis";
     public static final String BUFFERED_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.poll.interval.millis";
     // common configs
-    List<String> bootstrapServersConfig;
-    Boolean autoCommitConfig;
-    String groupIdConfig;
-    Object keyDeserializerClassConfig;
-    Object valuesDeserializerClassConfig;
+    private List<String> bootstrapServersConfig;
+    private Boolean autoCommitConfig;
+    private String groupIdConfig;
+    private Object keyDeserializerClassConfig;
+    private Object valuesDeserializerClassConfig;
     // buffer consumer configs
-    List<String> buffTopicName;
-    int buffMinBatchSize;
-    Boolean buffIsHashListInclude;
-    int buffTimeoutMillis;
-    long buffPollIntervalMillis;
+    private List<String> buffTopicName;
+    private int buffMinBatchSize;
+    private Boolean buffIsHashListInclude;
+    private int buffTimeoutMillis;
+    private long buffPollIntervalMillis;
 
     /**
      * @param bootstrapServersConfig
@@ -103,5 +106,25 @@ public class ConsumerBufferConfigs {
                 ", buffTimeoutMillis=" + buffTimeoutMillis +
                 ", buffPollIntervalMillis=" + buffPollIntervalMillis +
                 '}';
+    }
+    //TODO: configs change 하는 단에서 누락된 field 가 있는 JSON 데이터가 들어올 경우 이를 알려주는 방법을 구현해야함.
+    public boolean checkFieldsNull() {
+        if (this.bootstrapServersConfig != null &&
+                this.autoCommitConfig != null &&
+                this.groupIdConfig != null &&
+                this.buffTopicName != null &&
+                this.buffMinBatchSize != 0 &&
+                this.buffIsHashListInclude != null &&
+                this.buffTimeoutMillis != 0 &&
+                this.buffPollIntervalMillis != 0
+        )
+        {
+            return false;
+        }
+        else
+        {
+            log.info("ERROR! some of fields are NULL.");
+            return true;
+        }
     }
 }

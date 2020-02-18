@@ -118,15 +118,15 @@ public class StatusService {
      * 이는 deleteBufferStatus(String topicName) 와 AdminController 에서 parameter 의 data type 이 String 인 것을
      * 고려하여 만들어진 메소드임. immediate 도 이하동일.
      *
-     * @param bufferTopicName Configs 가 아닌 TopicName 객체만을 받는 것이 훨씬 간편하므로 함수 오버로딩함.
+     * @param TopicName Configs 가 아닌 TopicName 객체만을 받는 것이 훨씬 간편하므로 함수 오버로딩함.
      * @return
      * @author 최상현
      */
-    private String BuffDelete(String bufferTopicName) {
+    private String BuffDelete(String TopicName) {
         try{
-            List<String> temp = new ArrayList<>();
-            temp.add(bufferTopicName);
-            String jsonString = om.writeValueAsString(temp);
+            List<String> topicNameList = new ArrayList<>();
+            topicNameList.add(TopicName);
+            String jsonString = om.writeValueAsString(topicNameList);
 
             return jsonString;
         } catch (JsonProcessingException e) {
@@ -153,7 +153,9 @@ public class StatusService {
      */
     private String ImmeDelete(String topicName) {
         try {
-            String jsonString = om.writeValueAsString(topicName);
+            List<String> topicNameList = new ArrayList<>();
+            topicNameList.add(topicName);
+            String jsonString = om.writeValueAsString(topicNameList);
             return jsonString;
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
