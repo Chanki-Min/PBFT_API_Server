@@ -103,7 +103,7 @@ public class KafkaAdminController {
             String topicName = configs.getImmediateTopicName().get(0);
             if (!consumerDataService.checkTopic(topicName)) {
                 ImmediateConsumingPbftClient immediateConsumingPbftClient =
-                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getConImmeConfigs());
+                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getImmeConfigs());
                 consumerDataService.setConsumer(topicName,immediateConsumingPbftClient);
                 asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer);
                 return String.format("New Immediate Consumer added!");
