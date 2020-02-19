@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -20,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @Service
-@PropertySource("classpath:broker.properties")
 public class BlockVerificationSchedulerService implements InitializingBean, DisposableBean {
 	private static final String CONCURRENT_STAT_SCHEDULER_ERROR = "BlockVerificationSchedulerService is already running";
 	private static final String CONCURRENT_CRON_SCHEDULER_ERROR = "BlockVerificationSchedulerService's cronTap is already modifying";

@@ -3,7 +3,6 @@ package kr.ac.hongik.apl.broker.apiserver.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -13,7 +12,6 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableAsync
-@PropertySource("classpath:broker.properties")
 public class ThreadPoolTaskExecutorConfiguration {
 	public static final String CONSUMER_THREAD_CORE_POOL_SIZE = "broker.consumer.thread.corePoolSize";
 	public static final String CONSUMER_THREAD_MAX_POOL_SIZE = "broker.consumer.thread.maxPoolSize";

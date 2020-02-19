@@ -1,22 +1,27 @@
 package kr.ac.hongik.apl.broker.apiserver.Configuration;
 
 import kr.ac.hongik.apl.ES.EsRestClient;
+import kr.ac.hongik.apl.broker.apiserver.ApIserverApplication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.env.PropertiesPropertySourceLoader;
+import org.springframework.boot.env.PropertySourceLoader;
+import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
-import java.io.Console;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 @Slf4j
 @Configuration
-@PropertySource("classpath:broker.properties")
 public class PbftClientConfiguration {
+	private static final String REPLICA_PROPERTIES_DIR = "replica.properties";
+
 	public static final String ELASTICSEARCH_CERT_PATH = "broker.elasticsearch.cert.path";
 	public static final String ELASTICSEARCH_CONNECT_NODES_COUNT = "broker.elasticsearch.connect_nodes_count";
 	public static final String ELASTICSEARCH_NODE_NAMES = "broker.elasticsearch.node.names";
@@ -24,19 +29,35 @@ public class PbftClientConfiguration {
 	public static final String ELASTICSEARCH_NODE_PORTS = "broker.elasticsearch.node.ports";
 	public static final String ELASTICSEARCH_NODE_SCHEME = "broker.elasticsearch.node.scheme";
 
+	private final PropertySourceLoader loader = new PropertiesPropertySourceLoader();
+
 	@Autowired
 	Environment env;
 
 	@Bean(name = "pbftClientProperties")
 	public Properties pbftClientProperties() throws IOException {
-		InputStream in = getClass().getResourceAsStream("/replica.properties");
 		Properties properties = new Properties();
-		properties.load(in);
+		InputStream inputStream = new ClassPathResource("resourcesPath.properties", this.getClass().getClassLoader()).getInputStream();
+		properties.load(inputStream);
+		String currentJarPath = getCurrentSpringJarFileDir();
+		String relativePath = properties.getProperty(REPLICA_PROPERTIES_DIR);
+
+		properties = new Properties();
+		try {
+			Resource resource = new FileSystemResource(currentJarPath+relativePath);
+			properties.load(resource.getInputStream());
+		} catch (FileNotFoundException e) {
+			String intellijProjectDir = getCurrentIntellijProjectDir();
+			Resource resource = new FileSystemResource(intellijProjectDir+relativePath);
+			properties.load(resource.getInputStream());
+		}
 		return properties;
 	}
 
 	@Bean(name = "esRestClientConfigs")
 	public HashMap<String, Object> esRestClientConfigs() throws IOException {
+		//TODO : PBFT에게 인증서의 경로를 보내는 것은 의미가 없다. 다른 방법을 찾아볼 필요가 있다.
+
 		HashMap<String, Object> esRestClientConfigs = new HashMap<>();
 
 		esRestClientConfigs.put("userName", getStdinFromConsole("Enter elasticsearch username : ", false));
@@ -95,6 +116,24 @@ public class PbftClientConfiguration {
 			Scanner scanner = new Scanner(System.in);
 			System.out.print(fmt);
 			return scanner.nextLine();
+		}
+	}
+
+	private String getCurrentSpringJarFileDir() {
+		ApplicationHome home = new ApplicationHome(ApIserverApplication.class);
+		try {
+			return home.getDir().getCanonicalPath();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private String getCurrentIntellijProjectDir() {
+		File jarDir = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
+		try {
+			return jarDir.getParentFile().getCanonicalPath();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

@@ -1,5 +1,5 @@
 Apiserver/HELP.md
-target/
+Apiserver/target/*
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
 !**/src/test/**
@@ -33,3 +33,4 @@ build/
 ### API server
 logs
 /data/test.db
+!Apiserver/target/config/

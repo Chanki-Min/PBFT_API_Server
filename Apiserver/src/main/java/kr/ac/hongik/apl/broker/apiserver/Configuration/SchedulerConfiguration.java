@@ -3,14 +3,12 @@ package kr.ac.hongik.apl.broker.apiserver.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
-@PropertySource("classpath:broker.properties")
 public class SchedulerConfiguration {
 	public static final String SCHEDULER_POOL_SIZE = "broker.scheduler.pool.size";
 	public static final String SCHEDULER_THREAD_NAME_PREFIX = "broker.scheduler.thread.name.prefix";
