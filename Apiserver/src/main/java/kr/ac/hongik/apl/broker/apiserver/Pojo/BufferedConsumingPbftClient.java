@@ -11,7 +11,7 @@ import kr.ac.hongik.apl.Operations.Operation;
 import kr.ac.hongik.apl.Util;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerDataService;
-import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.SendBlockInsertionAckService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.SendAckToDesignatedURLService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -48,12 +48,12 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
     private final AsyncExecutionService asyncExecutionService;
     private final ObjectMapper objectMapper;
     private final ConsumerDataService consumerDataService;
-    private final SendBlockInsertionAckService sendBlockInsertionAckService;
+    private final SendAckToDesignatedURLService sendAckToDesignatedURLService;
 
     public BufferedConsumingPbftClient(Map<String, Object> consumerConfigs, Map<String, Object> bufferedClientConfigs,
                                        Properties pbftClientProperties, HashMap<String, Object> esRestClientConfigs,
                                        AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper,
-                                       ConsumerDataService consumerDataService, SendBlockInsertionAckService sendBlockInsertionAckService)
+                                       ConsumerDataService consumerDataService, SendAckToDesignatedURLService sendAckToDesignatedURLService)
     {
 
         this.consumerConfigs = consumerConfigs;
@@ -63,7 +63,7 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
         this.asyncExecutionService = asyncExecutionService;
         this.objectMapper = objectMapper;
         this.consumerDataService = consumerDataService;
-        this.sendBlockInsertionAckService = sendBlockInsertionAckService;
+        this.sendAckToDesignatedURLService = sendAckToDesignatedURLService;
     }
 
     @Override
@@ -92,6 +92,10 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                         consumer.commitSync(Collections.singletonMap(latestPartition,new OffsetAndMetadata(lastOffset+1))); // 오프셋 커밋
                         List<Map<String, Object>> finalBuffer = new ArrayList<>(buffer);
                         asyncExecutionService.runAsExecuteExecutor(()->execute(finalBuffer));
+                        execute(buffer);
+                        //마지막 데이터로 Ack를 보낸다
+                        Map<String, Object> last = buffer.get(buffer.size()-1);
+                        sendAckToDesignatedURLService.sendLastData(last);
                         buffer.clear();
                         log.debug("unconsumedTime timeout, consumed uncompleted batch");
                     }
@@ -116,7 +120,7 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                                 consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1))); // 오프셋 커밋
                                 List<Map<String, Object>> finalBuffer = new ArrayList<>(buffer);
                                 asyncExecutionService.runAsExecuteExecutor(()->execute(finalBuffer));
-                                sendBlockInsertionAckService.sendLastData(last);
+                                sendAckToDesignatedURLService.sendLastData(last);
                                 buffer.clear();
                                 log.debug("consumed 1 batch");
                             }

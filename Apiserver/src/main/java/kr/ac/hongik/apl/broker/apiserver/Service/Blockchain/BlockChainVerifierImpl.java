@@ -4,6 +4,7 @@ import kr.ac.hongik.apl.Client;
 import kr.ac.hongik.apl.Messages.RequestMessage;
 import kr.ac.hongik.apl.Operations.*;
 import kr.ac.hongik.apl.broker.apiserver.Pojo.BlockId;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.SendAckToDesignatedURLService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,7 +24,7 @@ import java.util.Properties;
 public class BlockChainVerifierImpl implements BlockChainVerifier {
 
 	private final Properties properties;
-
+	private final SendAckToDesignatedURLService sendAckToDesignatedURLService;
 	/*
 	* 컬렉션 타입의 객체는 Autowired를 통한 DI가 정상적으로 동작하지 않는다 (Key로 value ="~"을 가지고 Value로 해당 맵을 가지는 맵이 생성됨)
 	* 따라서 컬렉션 타입을 반환하는 Bean method를 DI할때는 Resource 어노테이션을 사용해야 한다
@@ -32,8 +33,9 @@ public class BlockChainVerifierImpl implements BlockChainVerifier {
 	private Map<String, Object> esRestClientConfigs;
 
 	@Autowired
-	public BlockChainVerifierImpl(@Qualifier(value = "pbftClientProperties") Properties properties) {
+	public BlockChainVerifierImpl(@Qualifier(value = "pbftClientProperties") Properties properties, SendAckToDesignatedURLService sendAckToDesignatedURLService) {
 		this.properties = properties;
+		this.sendAckToDesignatedURLService = sendAckToDesignatedURLService;
 	}
 
 	/**
@@ -77,7 +79,7 @@ public class BlockChainVerifierImpl implements BlockChainVerifier {
 						log.error("OperationExecutionException occurred ", (OperationExecutionException) verifyResult);
 					} else {
 						List<String> result = (List<String>) verifyResult;
-						//TODO : 결과를 Locke backend, 또는 kafka topic으로 보내기
+						sendAckToDesignatedURLService.sendVerificationLog(result);
 						log.debug("BlockVerification end, send to server, result : ");
 						result.forEach(log::info);
 					}
@@ -104,7 +106,7 @@ public class BlockChainVerifierImpl implements BlockChainVerifier {
 					log.error("OperationExecutionException occurred ", (OperationExecutionException) verifyResult);
 				} else {
 					List<String> result = (List<String>) verifyResult;
-					//TODO : 결과를 Locke backend, 또는 kafka topic으로 보내기
+					sendAckToDesignatedURLService.sendVerificationLog(result);
 					log.debug("BlockVerification end, send to server, result : ");
 					result.forEach(log::info);
 				}

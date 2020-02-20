@@ -40,25 +40,25 @@ public class ConsumerFactoryService {
     private final AsyncExecutionService asyncExecutionService;
     private final ObjectMapper objectMapper;
     private final ConsumerDataService consumerDataService;
-    private final SendBlockInsertionAckService sendBlockInsertionAckService;
+    private final SendAckToDesignatedURLService sendAckToDesignatedURLService;
 
     @Autowired
     public ConsumerFactoryService(Properties pbftClientProperties, HashMap<String, Object> esRestClientConfigs,
                                   AsyncExecutionService asyncExecutionService, ObjectMapper objectMapper,
-                                  ConsumerDataService consumerDataService, SendBlockInsertionAckService sendBlockInsertionAckService) {
+                                  ConsumerDataService consumerDataService, SendAckToDesignatedURLService sendAckToDesignatedURLService) {
 
         this.pbftClientProperties = pbftClientProperties;
         this.esRestClientConfigs = esRestClientConfigs;
         this.asyncExecutionService = asyncExecutionService;
         this.objectMapper = objectMapper;
         this.consumerDataService = consumerDataService;
-        this.sendBlockInsertionAckService = sendBlockInsertionAckService;
+        this.sendAckToDesignatedURLService = sendAckToDesignatedURLService;
     }
 
 
     public BufferedConsumingPbftClient MakeBufferedConsumer(Map<String, Object> consumerConfigs,Map<String, Object> bufferedClientConfigs) {
         BufferedConsumingPbftClient bufferedConsumingPbftClient = new BufferedConsumingPbftClient(consumerConfigs,bufferedClientConfigs,
-                pbftClientProperties,esRestClientConfigs,asyncExecutionService,objectMapper,consumerDataService,sendBlockInsertionAckService);
+                pbftClientProperties,esRestClientConfigs,asyncExecutionService,objectMapper,consumerDataService, sendAckToDesignatedURLService);
 
         return  bufferedConsumingPbftClient;
     }
