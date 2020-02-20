@@ -220,4 +220,5 @@ public class BufferedConsumingPbftClient implements ConsumingPbftClient {
                 (int) bufferedClientConfigs.get(BUFFERED_CONSUMER_MIN_BATCH_SIZE));
         return consumerData;
     }
+
 }

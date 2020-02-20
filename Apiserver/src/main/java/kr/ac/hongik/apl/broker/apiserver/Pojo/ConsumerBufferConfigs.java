@@ -1,9 +1,6 @@
 package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
-import lombok.Data;
 import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
@@ -24,7 +21,7 @@ import static kr.ac.hongik.apl.broker.apiserver.Pojo.ConsumerImmediateConfigs.ge
  */
 @Slf4j
 @Getter
-public class ConsumerBufferConfigs {
+public class ConsumerBufferConfigs implements ValidatablePojo {
     public static final String BUFFERED_CONSUMER_TOPICS = "kafka.listener.service.topic";
     public static final String BUFFERED_CONSUMER_MIN_BATCH_SIZE = "kafka.listener.service.minBatchSize";
     public static final String BUFFERED_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.isHashListInclude";
@@ -107,23 +104,26 @@ public class ConsumerBufferConfigs {
                 ", buffPollIntervalMillis=" + buffPollIntervalMillis +
                 '}';
     }
+
     //TODO: configs change 하는 단에서 누락된 field 가 있는 JSON 데이터가 들어올 경우 이를 알려주는 방법을 구현해야함.
-    public boolean checkFieldsNull() {
-        if (this.bootstrapServersConfig != null &&
-                this.autoCommitConfig != null &&
-                this.groupIdConfig != null &&
-                this.buffTopicName != null &&
-                this.buffMinBatchSize != 0 &&
-                this.buffIsHashListInclude != null &&
-                this.buffTimeoutMillis != 0 &&
-                this.buffPollIntervalMillis != 0
-        )
+    @Override
+    public boolean validateMemberVar()
+    {
+        if (this.bootstrapServersConfig == null ||
+                this.autoCommitConfig == null ||
+                this.groupIdConfig == null ||
+                this.buffTopicName == null ||
+                this.buffMinBatchSize <= 0 ||
+                this.buffIsHashListInclude == null ||
+                this.buffTimeoutMillis <= 0 ||
+                this.buffPollIntervalMillis <= 0
+            )
         {
+            log.info("ERROR! some of fields are NULL.");
             return false;
         }
         else
         {
-            log.info("ERROR! some of fields are NULL.");
             return true;
         }
     }

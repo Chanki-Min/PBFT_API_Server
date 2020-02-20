@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
@@ -19,8 +20,9 @@ import java.util.Map;
  *
  * @Author 최상현
  */
+@Slf4j
 @Getter
-public class ConsumerImmediateConfigs {
+public class ConsumerImmediateConfigs implements ValidatablePojo {
     public static final String IMMEDIATE_CONSUMER_TOPICS = "kafka.listener.service.immediate.topic";
     public static final String IMMEDIATE_CONSUMER_IS_HASHLIST_INCLUDE = "kafka.listener.service.immediate.isHashListInclude";
     public static final String IMMEDIATE_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.immediate.timeout.millis";
@@ -95,4 +97,24 @@ public class ConsumerImmediateConfigs {
                 '}';
     }
 
+    @Override
+    public boolean validateMemberVar()
+    {
+        if (this.bootstrapServersConfig == null ||
+                this.autoCommitConfig == null ||
+                this.groupIdConfig == null ||
+                this.immediateTopicName == null ||
+                this.immediateIsHashListInclude == null ||
+                this.immediateTimeoutMillis <= 0 ||
+                this.immediatePollIntervalMillis <= 0
+        )
+        {
+            log.info("ERROR! some of fields are NULL.");
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
 }

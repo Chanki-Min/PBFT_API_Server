@@ -77,6 +77,10 @@ public class KafkaAdminController {
     @PostMapping("/consumer/create/buf")
     @ResponseBody
     public String createBuffConsumer(@RequestBody ConsumerBufferConfigs configs) {
+        if(!configs.validateMemberVar())
+        {
+            return String.format("you've missed some of fields. try again");
+        }
         int topicListSize = configs.getBuffTopicName().size();
         if (topicListSize == 1) {
             String topicName = configs.getBuffTopicName().get(0);
@@ -99,6 +103,10 @@ public class KafkaAdminController {
     @PostMapping("/consumer/create/imme")
     @ResponseBody
     public String createImmediateConsumer(@RequestBody ConsumerImmediateConfigs configs) {
+        if(!configs.validateMemberVar())
+        {
+            return String.format("you've missed some of fields. try again");
+        }
         int topicListSize = configs.getImmediateTopicName().size();
         if (topicListSize == 1) {
             String topicName = configs.getImmediateTopicName().get(0);
@@ -138,9 +146,8 @@ public class KafkaAdminController {
     @PostMapping("/consumer/change/buf")
     @ResponseBody
     public String changeBuffConsumer(@RequestBody ConsumerBufferConfigs configs) throws Exception {
-
         log.info(configs.toString());
-        if(configs.checkFieldsNull())
+        if(!configs.validateMemberVar())
         {
             return String.format("you've missed some of fields. try again");
         }
