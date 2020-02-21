@@ -12,8 +12,13 @@ import java.io.IOException;
 @Slf4j
 @RestController(value = "/elasticsearch")
 public class ElasticsearchManagementController {
+
+	private final ElasticsearchIndexCreationService elasticsearchIndexCreationService;
+
 	@Autowired
-	ElasticsearchIndexCreationService elasticsearchIndexCreationService;
+	public ElasticsearchManagementController(ElasticsearchIndexCreationService elasticsearchIndexCreationService) {
+		this.elasticsearchIndexCreationService = elasticsearchIndexCreationService;
+	}
 
 	@RequestMapping(value = "/create/index", method = RequestMethod.POST)
 	@ResponseBody

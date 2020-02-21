@@ -14,8 +14,13 @@ import java.util.Map;
 
 @Configuration
 public class KafkaAdminConfiguration {
-    @Autowired
+
     private Environment env;
+
+    @Autowired
+    public KafkaAdminConfiguration(Environment env) {
+        this.env = env;
+    }
 
     @Bean
     public Map<String, Object> adminConfigs() {

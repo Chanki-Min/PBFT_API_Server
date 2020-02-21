@@ -24,16 +24,20 @@ public class BlockchainController {
 	private static final String SEARCH_ERROR_MSG = "executing query to elasticsearch failed. reason : ";
 	private static final String RESULT_EXTRACTION_ERROR_MSG = "extracting blockIds from searchResult failed, abort verification. searchResult : \n%s\n";
 
+	private final BlockVerificationSchedulerService blockVerificationSchedulerService;
+	private final ElasticsearchSearchService elasticsearchSearchService;
+	private final ExtractBlockIdFromResultService extractBlockNumberFromResultService;
+	private final AsyncExecutionService asyncExecutionService;
+	private final BlockChainVerifier blockChainVerifier;
+
 	@Autowired
-	BlockVerificationSchedulerService blockVerificationSchedulerService;
-	@Autowired
-	ElasticsearchSearchService elasticsearchSearchService;
-	@Autowired
-	ExtractBlockIdFromResultService extractBlockNumberFromResultService;
-	@Autowired
-	AsyncExecutionService asyncExecutionService;
-	@Autowired
-	BlockChainVerifier blockChainVerifier;
+	public BlockchainController(BlockVerificationSchedulerService blockVerificationSchedulerService, ElasticsearchSearchService elasticsearchSearchService, ExtractBlockIdFromResultService extractBlockNumberFromResultService, AsyncExecutionService asyncExecutionService, BlockChainVerifier blockChainVerifier) {
+		this.blockVerificationSchedulerService = blockVerificationSchedulerService;
+		this.elasticsearchSearchService = elasticsearchSearchService;
+		this.extractBlockNumberFromResultService = extractBlockNumberFromResultService;
+		this.asyncExecutionService = asyncExecutionService;
+		this.blockChainVerifier = blockChainVerifier;
+	}
 
 	/**
 	 * 현재 BlockVerificationSchedulerService에 스캐쥴링된 task를 취소하고, 새로운 cron으로 task를 스캐쥴링합니다

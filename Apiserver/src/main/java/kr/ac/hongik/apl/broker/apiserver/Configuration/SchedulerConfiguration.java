@@ -15,8 +15,12 @@ public class SchedulerConfiguration {
 	public static final String SCHEDULER_DEFAULT_CRON = "broker.scheduler.default.cron";
 	public static final String SCHEDULER_START_WHEN_INITIALIZE = "broker.scheduler.startWhenInitialize";
 
+	private final Environment env;
+
 	@Autowired
-	Environment env;
+	public SchedulerConfiguration(Environment env) {
+		this.env = env;
+	}
 
 	/**
 	 * 지정한 작업을 지정한 스케쥴대로 주기적으로 실행하는 TheadPoolTaskScheduler를 생성합니다.

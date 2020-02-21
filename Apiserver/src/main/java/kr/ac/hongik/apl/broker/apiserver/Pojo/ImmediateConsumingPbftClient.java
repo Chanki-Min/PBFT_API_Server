@@ -47,13 +47,12 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
     //Async 노테이션의 메소드는 this가 invoke()할 수 없기 때문에 비동기 실행만 시키는 서비스를 주입한다
     private final AsyncExecutionService asyncExecutionService;
     private final ObjectMapper objectMapper;
-    private final ConsumerDataService consumerDataService;
 
 
     public ImmediateConsumingPbftClient(Map<String, Object> consumerConfigs, Map<String, Object> immediateConsumerConfigs,
                                         Properties pbftClientProperties,
                                         HashMap<String, Object> esRestClientConfigs, AsyncExecutionService asyncExecutionService,
-                                        ObjectMapper objectMapper, ConsumerDataService consumerDataService) {
+                                        ObjectMapper objectMapper) {
 
         this.consumerConfigs = consumerConfigs;
         this.immediateConsumerConfigs = immediateConsumerConfigs;
@@ -61,7 +60,6 @@ public class ImmediateConsumingPbftClient implements ConsumingPbftClient {
         this.esRestClientConfigs = esRestClientConfigs;
         this.asyncExecutionService = asyncExecutionService;
         this.objectMapper = objectMapper;
-        this.consumerDataService = consumerDataService;
     }
 
     @Override

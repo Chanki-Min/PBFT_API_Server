@@ -18,7 +18,7 @@ import java.util.Map;
  * 자세한 사항은 ConsumerBuffConfigs 의 내용을 참고할 것
  * @see ConsumerBufferConfigs
  *
- * @Author 최상현
+ * @author 최상현
  */
 @Slf4j
 @Getter
@@ -28,17 +28,17 @@ public class ConsumerImmediateConfigs implements ValidatablePojo {
     public static final String IMMEDIATE_CONSUMER_TIMEOUT_MILLIS = "kafka.listener.service.immediate.timeout.millis";
     public static final String IMMEDIATE_CONSUMER_POLL_INTERVAL_MILLIS = "kafka.listener.service.immediate.poll.interval.millis";
     // common configs
-    List<String> bootstrapServersConfig;
+    private List<String> bootstrapServersConfig;
 
-    Boolean autoCommitConfig;
-    String groupIdConfig;
-    Object keyDeserializerClassConfig;
-    Object valuesDeserializerClassConfig;
+    private Boolean autoCommitConfig;
+    private String groupIdConfig;
+    private Object keyDeserializerClassConfig;
+    private  Object valuesDeserializerClassConfig;
     // immediate consumer configs
-    List<String> immediateTopicName;
-    Boolean immediateIsHashListInclude;
-    int immediateTimeoutMillis;
-    long immediatePollIntervalMillis;
+    private List<String> immediateTopicName;
+    private Boolean immediateIsHashListInclude;
+    private int immediateTimeoutMillis;
+    private long immediatePollIntervalMillis;
 
 
     public ConsumerImmediateConfigs(List<String> bootstrapServersConfig, Boolean autoCommitConfig, String groupIdConfig, List<String> immediateTopicName, Boolean immediateIsHashListInclude, int immediateTimeoutMillis, long immediatePollIntervalMillis) throws JsonProcessingException {

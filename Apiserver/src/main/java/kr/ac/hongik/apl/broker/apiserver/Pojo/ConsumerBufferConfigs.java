@@ -41,14 +41,6 @@ public class ConsumerBufferConfigs implements ValidatablePojo {
     private long buffPollIntervalMillis;
 
     /**
-     * @param bootstrapServersConfig
-     * @param autoCommitConfig
-     * @param groupIdConfig
-     * @param buffTopicName
-     * @param buffMinBatchSize
-     * @param buffIsHashListInclude
-     * @param buffTimeoutMillis
-     * @param buffPollIntervalMillis
      * Allargs 어노테이션을 활용하지않고 생성자를 지정한 이유는
      * keyDeserializeClassConfig와 valuesDeserializerClassConfig 는 JSON 으로 받기엔
      * 힘든 class 객체를 참조하여야하기 때문임.
@@ -105,7 +97,6 @@ public class ConsumerBufferConfigs implements ValidatablePojo {
                 '}';
     }
 
-    //TODO: configs change 하는 단에서 누락된 field 가 있는 JSON 데이터가 들어올 경우 이를 알려주는 방법을 구현해야함.
     @Override
     public boolean validateMemberVar()
     {

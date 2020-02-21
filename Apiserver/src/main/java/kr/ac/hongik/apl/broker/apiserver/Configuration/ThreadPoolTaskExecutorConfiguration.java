@@ -28,8 +28,12 @@ public class ThreadPoolTaskExecutorConfiguration {
 	public static final String EXECUTE_THREAD_QUEUE_CAPACITY = "broker.execute.thread.queueCapacity";
 	public static final String EXECUTE_THREAD_THREAD_NAME_PREFIX = "broker.execute.thread.threadNamePrefix";
 
+	private final Environment env;
+
 	@Autowired
-	Environment env;
+	public ThreadPoolTaskExecutorConfiguration(Environment env) {
+		this.env = env;
+	}
 
 	/**
 	 * Kafka 컨슈머를 쓰레드를 관리하는 풀을 생성한다

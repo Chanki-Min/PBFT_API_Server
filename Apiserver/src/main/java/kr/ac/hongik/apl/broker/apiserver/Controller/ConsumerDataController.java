@@ -14,7 +14,7 @@ import java.util.Map;
 @Controller
 public class ConsumerDataController {
 
-    public final ConsumerDataService consumerDataService;
+    private final ConsumerDataService consumerDataService;
 
     @Autowired
     public ConsumerDataController(ConsumerDataService consumerDataService) {

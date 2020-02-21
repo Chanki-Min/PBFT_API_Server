@@ -16,10 +16,14 @@ import java.util.stream.Collectors;
 @Service
 public class StatusService {
 
-    @Autowired
-    StatusMapper statusMapper;
+    private final StatusMapper statusMapper;
 
     ObjectMapper om = new ObjectMapper();
+
+    @Autowired
+    public StatusService(StatusMapper statusMapper) {
+        this.statusMapper = statusMapper;
+    }
 
     public List<ConsumerBufferConfigs> getBufferStatus() {
       List<DBConsumerBufferConfigs> dbc = statusMapper.selectAllBufferStatus();

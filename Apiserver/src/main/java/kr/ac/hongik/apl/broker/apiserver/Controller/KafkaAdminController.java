@@ -72,7 +72,7 @@ public class KafkaAdminController {
      * @param configs api 사용자가 정의한 컨슈머 config 정보가 담긴 객체
      * @return
      *
-     * @Author 이혁수, 최상현
+     * @author 이혁수, 최상현
      */
     @PostMapping("/consumer/create/buf")
     @ResponseBody
@@ -228,7 +228,7 @@ public class KafkaAdminController {
      * @return
      * @throws Exception
      *
-     * @Author 이혁수
+     * @author 이혁수
      */
     @RequestMapping(value = "/consumer/shutdown")
     @ResponseBody

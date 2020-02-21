@@ -31,8 +31,12 @@ public class PbftClientConfiguration {
 
 	private final PropertySourceLoader loader = new PropertiesPropertySourceLoader();
 
+	private final Environment env;
+
 	@Autowired
-	Environment env;
+	public PbftClientConfiguration(Environment env) {
+		this.env = env;
+	}
 
 	@Bean(name = "pbftClientProperties")
 	public Properties pbftClientProperties() throws IOException {

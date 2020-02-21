@@ -24,7 +24,7 @@ import java.util.Properties;
  * 이 서비스는 아래의 클래스에서 활용함.
  * @see kr.ac.hongik.apl.broker.apiserver.Controller.KafkaAdminController#createBuffConsumer(ConsumerBufferConfigs)
  *
- * @Author 최상현
+ * @author 최상현
  */
 @Slf4j
 @Service
@@ -36,7 +36,7 @@ public class ConsumerFactoryService {
     private Map<String, Object> bufferedClientConfigs;
     private Map<String, Object> immediateConsumerConfigs;
     private final Properties pbftClientProperties;
-    public final HashMap<String, Object> esRestClientConfigs;
+    private final HashMap<String, Object> esRestClientConfigs;
     private final AsyncExecutionService asyncExecutionService;
     private final ObjectMapper objectMapper;
     private final ConsumerDataService consumerDataService;
@@ -58,13 +58,13 @@ public class ConsumerFactoryService {
 
     public BufferedConsumingPbftClient MakeBufferedConsumer(Map<String, Object> consumerConfigs,Map<String, Object> bufferedClientConfigs) {
         BufferedConsumingPbftClient bufferedConsumingPbftClient = new BufferedConsumingPbftClient(consumerConfigs,bufferedClientConfigs,
-                pbftClientProperties,esRestClientConfigs,asyncExecutionService,objectMapper,consumerDataService, sendAckToDesignatedURLService);
+                pbftClientProperties,esRestClientConfigs,asyncExecutionService,objectMapper, sendAckToDesignatedURLService);
 
         return  bufferedConsumingPbftClient;
     }
     public ImmediateConsumingPbftClient MakeImmediateConsumer(Map<String, Object> consumerConfigs,Map<String, Object> immediateConsumerConfigs) {
         ImmediateConsumingPbftClient immediateConsumingPbftClient = new ImmediateConsumingPbftClient(consumerConfigs,immediateConsumerConfigs,
-                pbftClientProperties,esRestClientConfigs,asyncExecutionService,objectMapper,consumerDataService);
+                pbftClientProperties,esRestClientConfigs,asyncExecutionService,objectMapper);
 
         return immediateConsumingPbftClient;
     }

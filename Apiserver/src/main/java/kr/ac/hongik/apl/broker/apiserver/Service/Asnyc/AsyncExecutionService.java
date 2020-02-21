@@ -34,7 +34,7 @@ public class AsyncExecutionService {
      * @param function 컨슈머 시작하는 함수 인터페이스
      * @param exceptionOrNull 컨슈머가 종료되었을 때 반환되는 예외처리 변수. null 이 아니면 예기치 못한 에러이며 null 일 시 정상 종료를 뜻한다.
      *
-     * @Author 이혁수
+     * @author 이혁수
      */
     public void restartOrStopConsumer(Supplier<Exception> function, Exception exceptionOrNull) {
         if (exceptionOrNull != null) {
