@@ -20,8 +20,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.ContextClosedEventListenerConfiguration.EXECUTE_THREAD_AWIATTIME;
-import static kr.ac.hongik.apl.broker.apiserver.Configuration.ContextClosedEventListenerConfiguration.TOMCAT_TERMINATION_TIMEOUT_MILLIS;
+import static kr.ac.hongik.apl.broker.apiserver.Configuration.ContextClosedEventListenerConfiguration.*;
 
 /**
  * Spring이 shutdown되어 singleton bean들이 소멸되기 직전의 상태에서 발생되는 ContextClosedEvent를 잡아서 gracefully shutdown 을 실행하는
@@ -33,7 +32,7 @@ import static kr.ac.hongik.apl.broker.apiserver.Configuration.ContextClosedEvent
  */
 @Slf4j
 @Component
-public class ContextClosetEventListener implements TomcatConnectorCustomizer {
+public class ContextClosedEventListener implements TomcatConnectorCustomizer {
 	@Resource(name = "contextClosedEventListenerConfig")
 	private Map<String, Object> contextClosedEventListenerConfig;
 
@@ -42,7 +41,7 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 	private volatile Connector connector;
 
 	@Autowired
-	public ContextClosetEventListener(ConsumerDataService consumerDataService, ObjectMapper objectMapper) {
+	public ContextClosedEventListener(ConsumerDataService consumerDataService, ObjectMapper objectMapper) {
 		this.consumerDataService = consumerDataService;
 		this.objectMapper = objectMapper;
 	}
@@ -75,6 +74,8 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 	public void shutdownGracefully(ContextClosedEvent event) {
 		int tomcatTerminationTimeoutMillis = (int) contextClosedEventListenerConfig.get(TOMCAT_TERMINATION_TIMEOUT_MILLIS);
 		int executeThreadAwaitTime =  (int) contextClosedEventListenerConfig.get(EXECUTE_THREAD_AWIATTIME);
+		int consumerThreadAwaitTime = (int) contextClosedEventListenerConfig.get(CONSUMER_THREAD_AWIATTIME);
+
 		log.info(String.format("Got ContextClosedEvent. try to shutdown server gracefully..."));
 		log.info("Shutting down tomcat web server...");
 		//Tomcat 이 더 이상의 request 를 받지 않도록 한다.
@@ -120,10 +121,16 @@ public class ContextClosetEventListener implements TomcatConnectorCustomizer {
 			ConsumingPbftClient consumer = entry.getValue();
 			try {
 				consumer.destroy();
+				log.info(String.format("Wait for consumer graceful shutdown"));
 				log.info(String.format("Consumer with topic : %s. destroy succeed", topic));
 			} catch (Exception e) {
 				log.error(String.format("Failed to destroy consumer instance. Topic : %s, cause : ", topic), e);
 			}
+		}
+		log.info(String.format("Waiting consumer threads shutdown for %dsecondes...", consumerThreadAwaitTime));
+		try {
+			Thread.sleep(consumerThreadAwaitTime);
+		} catch (InterruptedException ignore) {
 		}
 		log.info("Running consumer threads shutdown COMPLETE");
 		/**
