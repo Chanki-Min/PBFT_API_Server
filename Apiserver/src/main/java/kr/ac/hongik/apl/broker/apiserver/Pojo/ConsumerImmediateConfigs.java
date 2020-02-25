@@ -41,7 +41,7 @@ public class ConsumerImmediateConfigs implements ValidatablePojo {
     private long immediatePollIntervalMillis;
 
 
-    public ConsumerImmediateConfigs(List<String> bootstrapServersConfig, Boolean autoCommitConfig, String groupIdConfig, List<String> immediateTopicName, Boolean immediateIsHashListInclude, int immediateTimeoutMillis, long immediatePollIntervalMillis) throws JsonProcessingException {
+    public ConsumerImmediateConfigs(List<String> bootstrapServersConfig, Boolean autoCommitConfig, String groupIdConfig, List<String> immediateTopicName, Boolean immediateIsHashListInclude, int immediateTimeoutMillis, long immediatePollIntervalMillis) {
         this.bootstrapServersConfig = bootstrapServersConfig;
         this.autoCommitConfig = autoCommitConfig;
         this.groupIdConfig = groupIdConfig;

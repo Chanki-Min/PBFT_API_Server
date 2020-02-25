@@ -127,7 +127,7 @@ public class ContextClosedEventListener implements TomcatConnectorCustomizer {
 				log.error(String.format("Failed to destroy consumer instance. Topic : %s, cause : ", topic), e);
 			}
 		}
-		log.info(String.format("Waiting consumer threads shutdown for %dsecondes...", consumerThreadAwaitTime));
+		log.info(String.format("Waiting consumer threads shutdown for %d ms...", consumerThreadAwaitTime));
 		try {
 			Thread.sleep(consumerThreadAwaitTime);
 		} catch (InterruptedException ignore) {

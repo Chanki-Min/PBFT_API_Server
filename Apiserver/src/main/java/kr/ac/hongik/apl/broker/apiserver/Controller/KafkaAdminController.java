@@ -9,16 +9,17 @@ import kr.ac.hongik.apl.broker.apiserver.Pojo.*;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerDataService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.ConsumerFactoryService;
+import kr.ac.hongik.apl.broker.apiserver.Service.Consumer.TopicAndConsumerCreationService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Sqlite.StatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.KafkaFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -28,101 +29,42 @@ import java.util.concurrent.atomic.AtomicReference;
 @Controller
 @RequestMapping("/kafka")
 public class KafkaAdminController {
-    /*
-     * Kafka의 토픽 생성, 삭제 관리를 처리하는 KafkaAdmin 객체를 오토와이어 해줍니다
-     */
-
-    private KafkaAdmin kafkaAdmin;
-
-    private ObjectMapper objectMapper;
-
-    private ConsumerFactoryService consumerFactoryService;
-
-    private AsyncExecutionService asyncExecutionService;
-
-    private ConsumerDataService consumerDataService;
-
-	private StatusService statusService;
+    private final ObjectMapper objectMapper;
+    private final ConsumerFactoryService consumerFactoryService;
+    private final AsyncExecutionService asyncExecutionService;
+    private final ConsumerDataService consumerDataService;
+	private final StatusService statusService;
+	private final TopicAndConsumerCreationService topicAndConsumerCreationService;
 
 	@Autowired
-    public KafkaAdminController(KafkaAdmin kafkaAdmin, ObjectMapper objectMapper, ConsumerFactoryService consumerFactoryService, AsyncExecutionService asyncExecutionService, ConsumerDataService consumerDataService, StatusService statusService) {
-        this.kafkaAdmin = kafkaAdmin;
+    public KafkaAdminController(ObjectMapper objectMapper, ConsumerFactoryService consumerFactoryService, AsyncExecutionService asyncExecutionService, ConsumerDataService consumerDataService, StatusService statusService, TopicAndConsumerCreationService topicAndConsumerCreationService) {
         this.objectMapper = objectMapper;
         this.consumerFactoryService = consumerFactoryService;
         this.asyncExecutionService = asyncExecutionService;
         this.consumerDataService = consumerDataService;
         this.statusService = statusService;
+        this.topicAndConsumerCreationService = topicAndConsumerCreationService;
     }
 
     /**
-     * request 로 컨슈머 정보가 api에 전달을 받으면
-     * 1. 토픽 리스트의 사이즈를 확인 한다.
-     *  컨슈머는 오직 하나의 토픽만을 구독하기로 약속되어 있기 때문에
-     *  토픽 사이즈가 1, 즉 한개의 토픽 정보가 있을 때만 다음 단계로 넘어가고
-     *  그렇지 않으면 토픽을 확인하라는 메시지를 전달한다.
-     * 2. 토픽이 이미 다른 컨슈머에 의해 구독되어 있는지를 확인한다.
-     *  토픽 리스트에 한개의 토픽만이 있기 때문에, 0번째 토픽을 가져와 이미 생성된 컨슈머들이
-     *  담긴 컨슈머맵에서 해당 토픽을 구독하는 컨슈머가 존재하는지 여부를 확인한다.
-     *  컨슈머맵에 같은 토픽을 구독하는 컨슈머가 있으면 컨슈머를 생성하지 않고
-     *  토픽을 확인하라는 메시지를 전달한다.
-     * 3. 위 두 조건이 만족되면 consumerFactoryService 로 컨슈머를 생성하고 컨슈머를
-     *  컨슈머 정보를 담고 있는 consumerMap 에 토픽 이름을 키로 하여 삽입한다.
-     * 4. 컨슈머의 서비스를 비동기로 실행한다.
+     * @param info topic과 bufferConsumer를 생성하기 위한 정보가 담긴 객체
      *
-     * @param configs api 사용자가 정의한 컨슈머 config 정보가 담긴 객체
-     * @return
-     *
-     * @author 이혁수, 최상현
+     * @author 이지민
      */
-    @PostMapping("/consumer/create/buf")
+    @PostMapping("/create/buffer")
     @ResponseBody
-    public String createBuffConsumer(@RequestBody ConsumerBufferConfigs configs) {
-        if(!configs.validateMemberVar())
-        {
-            return String.format("you've missed some of fields. try again");
-        }
-        int topicListSize = configs.getBuffTopicName().size();
-        if (topicListSize == 1) {
-            String topicName = configs.getBuffTopicName().get(0);
-            if (!consumerDataService.checkTopic(topicName)) {
-                BufferedConsumingPbftClient bufferedConsumingPbftClient =
-                        consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
-                statusService.addBufferStatus(configs);
-                consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
-                asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
-                // TODO : client 객체 db에 삽입.
-                return String.format("New Buffer Consumer added!");
-            } else {
-                return String.format("Check the topic name.");
-            }
-        } else {
-            return String.format("Topic List's size should be 1.");
-        }
-    }
+    public String create(@RequestBody TopicBufferConsumerInfo info) throws ExecutionException, InterruptedException {
+        topicAndConsumerCreationService.createTopic(info.toNewTopic(), info.toAdminConfigs());
+        topicAndConsumerCreationService.createBufferConsumer(info.toBufferConfigs());
+        return info.toString();
+	}
 
-    @PostMapping("/consumer/create/imme")
+    @PostMapping("/create/immediate")
     @ResponseBody
-    public String createImmediateConsumer(@RequestBody ConsumerImmediateConfigs configs) {
-        if(!configs.validateMemberVar())
-        {
-            return String.format("you've missed some of fields. try again");
-        }
-        int topicListSize = configs.getImmediateTopicName().size();
-        if (topicListSize == 1) {
-            String topicName = configs.getImmediateTopicName().get(0);
-            if (!consumerDataService.checkTopic(topicName)) {
-                ImmediateConsumingPbftClient immediateConsumingPbftClient =
-                        consumerFactoryService.MakeImmediateConsumer(configs.getCommonConfigs(), configs.getImmeConfigs());
-                statusService.addImmediateStatus(configs);
-                consumerDataService.setConsumer(topicName,immediateConsumingPbftClient);
-                asyncExecutionService.runAsConsumerExecutor(immediateConsumingPbftClient::startConsumer);
-                return String.format("New Immediate Consumer added!");
-            } else {
-                return String.format("Check the topic name.");
-            }
-        } else {
-            return String.format("Topic List's size should be 1.");
-        }
+    public String create(@RequestBody TopicImmediateConsumerInfo info) throws ExecutionException, InterruptedException {
+        topicAndConsumerCreationService.createTopic(info.toNewTopic(), info.toAdminConfigs());
+        topicAndConsumerCreationService.createImmediateConsumer(info.toImmediateConfigs());
+        return info.toString();
     }
 
     /**
@@ -141,7 +83,7 @@ public class KafkaAdminController {
      * @return
      * @throws Exception
      *
-     * @Author 이혁수
+     * @author 이혁수
      */
     @PostMapping("/consumer/change/buf")
     @ResponseBody
@@ -174,15 +116,27 @@ public class KafkaAdminController {
         }
     }
 
+    /**
+     * 현재 topic들의 정보 리스트를 출력한다.
+     * @param map bootstrap-server주소가 담긴 map  ex) {"configs":["223.194.70.105:19590","223.194.70.105:19690","223.194.70.105:19790"]}
+     * @return
+     *
+     * @author 이지민
+     */
     //TODO : 권한 인증
     @PostMapping(value = "/consumer/describe")
     @ResponseBody
-    public String describeTopicRequest() {
+    public String describeTopicRequest(@RequestBody Map<String, Object> map) {
         /*
          * 권한 인증이 필요하다면 인증 후에 현재 카프카 클러스터의 토픽 정보를 반환한다
          */
+
+        Map<String, Object> props = new HashMap<>();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, map.get("configs"));
+
         log.info("Listing topic----------------------");
-        AdminClient adminClient = AdminClient.create(kafkaAdmin.getConfig());
+
+        AdminClient adminClient = AdminClient.create(props);
         AtomicReference<String> mappedValue = new AtomicReference<>("");
 
         try {
@@ -214,9 +168,6 @@ public class KafkaAdminController {
         return mappedValue.get();
     }
 
-    private NewTopic getTopic(String topic, int numpartitions, short replicas) {
-        return new NewTopic(topic, numpartitions, replicas);
-    }
 
     /**
      * 가동중인 컨슈머를 종료하고 싶을 때 보내는 요청 메소드.

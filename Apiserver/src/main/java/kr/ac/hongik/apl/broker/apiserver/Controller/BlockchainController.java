@@ -7,6 +7,7 @@ import kr.ac.hongik.apl.broker.apiserver.Pojo.ChangeCronScheduleResponse;
 import kr.ac.hongik.apl.broker.apiserver.Pojo.ElasticsearchQuery;
 import kr.ac.hongik.apl.broker.apiserver.Service.Asnyc.AsyncExecutionService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Blockchain.BlockChainVerifier;
+import kr.ac.hongik.apl.broker.apiserver.Service.Blockchain.BlockChainVerifierImpl;
 import kr.ac.hongik.apl.broker.apiserver.Service.Blockchain.BlockVerificationSchedulerService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Elasticsearch.ElasticsearchSearchService;
 import kr.ac.hongik.apl.broker.apiserver.Service.Elasticsearch.ExtractBlockIdFromResultService;
@@ -28,10 +29,10 @@ public class BlockchainController {
 	private final ElasticsearchSearchService elasticsearchSearchService;
 	private final ExtractBlockIdFromResultService extractBlockNumberFromResultService;
 	private final AsyncExecutionService asyncExecutionService;
-	private final BlockChainVerifier blockChainVerifier;
+	private final BlockChainVerifierImpl blockChainVerifier;
 
 	@Autowired
-	public BlockchainController(BlockVerificationSchedulerService blockVerificationSchedulerService, ElasticsearchSearchService elasticsearchSearchService, ExtractBlockIdFromResultService extractBlockNumberFromResultService, AsyncExecutionService asyncExecutionService, BlockChainVerifier blockChainVerifier) {
+	public BlockchainController(BlockVerificationSchedulerService blockVerificationSchedulerService, ElasticsearchSearchService elasticsearchSearchService, ExtractBlockIdFromResultService extractBlockNumberFromResultService, AsyncExecutionService asyncExecutionService, BlockChainVerifierImpl blockChainVerifier) {
 		this.blockVerificationSchedulerService = blockVerificationSchedulerService;
 		this.elasticsearchSearchService = elasticsearchSearchService;
 		this.extractBlockNumberFromResultService = extractBlockNumberFromResultService;
