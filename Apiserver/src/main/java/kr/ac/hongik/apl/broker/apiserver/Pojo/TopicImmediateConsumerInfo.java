@@ -1,10 +1,10 @@
 package kr.ac.hongik.apl.broker.apiserver.Pojo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.*;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +41,6 @@ public class TopicImmediateConsumerInfo {
     private Object valuesDeserializerClassConfig;
 
     // immediate consumer configs
-    List<String> immediateTopicName;
     Boolean immediateIsHashListInclude;
     int immediateTimeoutMillis;
     long immediatePollIntervalMillis;
@@ -51,6 +50,8 @@ public class TopicImmediateConsumerInfo {
     }
 
     public ConsumerImmediateConfigs toImmediateConfigs() {
+        List<String> immediateTopicName = new ArrayList<>(); //consumer 생성시 list<String> 형태로 변환하기 위함
+        immediateTopicName.add(topic);
         return new ConsumerImmediateConfigs(bootstrapServersConfig, autoCommitConfig, groupIdConfig, immediateTopicName, immediateIsHashListInclude, immediateTimeoutMillis, immediatePollIntervalMillis);
     }
 

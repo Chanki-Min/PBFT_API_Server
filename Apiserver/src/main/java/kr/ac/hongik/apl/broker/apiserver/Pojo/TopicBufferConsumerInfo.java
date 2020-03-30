@@ -4,6 +4,7 @@ import lombok.*;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,6 @@ public class TopicBufferConsumerInfo {
     private Object valuesDeserializerClassConfig;
 
     // buffer consumer configs
-    private List<String> buffTopicName;
     private int buffMinBatchSize;
     private Boolean buffIsHashListInclude;
     private int buffTimeoutMillis;
@@ -52,6 +52,8 @@ public class TopicBufferConsumerInfo {
     }
 
     public ConsumerBufferConfigs toBufferConfigs() {
+        List<String> buffTopicName = new ArrayList<>(); //consumer 생성시 list<String> 형태로 변환하기 위함
+        buffTopicName.add(topic);
         return new ConsumerBufferConfigs(bootstrapServersConfig, autoCommitConfig, groupIdConfig, buffTopicName, buffMinBatchSize, buffIsHashListInclude, buffTimeoutMillis, buffPollIntervalMillis);
     }
 
