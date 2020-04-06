@@ -79,7 +79,7 @@ public class KafkaAdminController {
      * 4. 새로 받은 객체 정보를 통해 새로운 컨슈머를 생성 후 맵에 삽입.
      * 5. 컨슈머 서비스 가동.
      *
-     * @param configs 클라이언트가 희망하는 컨슈머 config 가 담긴 객체. 이미 실행중인 컨슈머와 같은 토픽을 구독하여야 한다.
+     * @param info 클라이언트가 희망하는 컨슈머 config 가 담긴 객체. 이미 실행중인 컨슈머와 같은 토픽을 구독하여야 한다.
      * @return
      * @throws Exception
      *
@@ -87,33 +87,19 @@ public class KafkaAdminController {
      */
     @PostMapping("/consumer/change/buf")
     @ResponseBody
-    public String changeBuffConsumer(@RequestBody ConsumerBufferConfigs configs) throws Exception {
-        log.info(configs.toString());
-        if(!configs.validateMemberVar())
-        {
-            return String.format("you've missed some of fields. try again");
-        }
-
-        int topicListSize = configs.getBuffTopicName().size();
-        if (topicListSize == 1) {
-            String topicName = configs.getBuffTopicName().get(0);
+    public String changeBuffConsumer(@RequestBody TopicBufferConsumerInfo info) throws Exception {
+            String topicName = info.getTopic();
             if (consumerDataService.checkTopic(topicName)) {
-                statusService.deleteBufferStatus(configs);
+                statusService.deleteBufferStatus(topicName);
                 consumerDataService.consumerShutdown(topicName);
                 consumerDataService.deleteData(topicName);
-                BufferedConsumingPbftClient bufferedConsumingPbftClient =
-                        consumerFactoryService.MakeBufferedConsumer(configs.getCommonConfigs(), configs.getBuffConfigs());
-                statusService.addBufferStatus(configs);
-                consumerDataService.setConsumer(topicName,bufferedConsumingPbftClient);
-                asyncExecutionService.runAsConsumerExecutor(bufferedConsumingPbftClient::startConsumer);
+                topicAndConsumerCreationService.createTopic(info.toNewTopic(), info.toAdminConfigs());
+                topicAndConsumerCreationService.createBufferConsumer(info.toBufferConfigs());
                 log.info("Buffer Consumer has been changed");
                 return String.format("Buffer Consumer has been changed!");
             } else {
                 return String.format("Check the topic name");
             }
-        } else {
-            return String.format("Topic List's size should be 1.");
-        }
     }
 
     /**
