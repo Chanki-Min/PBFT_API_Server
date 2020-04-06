@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Service
 public class BlockVerificationSchedulerService implements InitializingBean, DisposableBean {
+	private static final String CRON_CHANGE_FAIL_ERROR = "Failed to change BlockVerificationSchedulerService's cronTap. reverted cron";
 	private static final String CONCURRENT_STAT_SCHEDULER_ERROR = "BlockVerificationSchedulerService is already running";
 	private static final String CONCURRENT_CRON_SCHEDULER_ERROR = "BlockVerificationSchedulerService's cronTap is already modifying";
 
@@ -58,8 +59,23 @@ public class BlockVerificationSchedulerService implements InitializingBean, Disp
 			if (futureTask != null && !futureTask.isCancelled()) {
 				futureTask.cancel(true);
 			}
+			String backUpCron = this.cron;
 			this.cron = cron;
-			this.start();
+			try {
+				this.start();
+			} catch (Exception e) {
+				isSchedulerRunning.set(false);
+				if (futureTask != null && !futureTask.isCancelled()) {
+					futureTask.cancel(true);
+				}
+				this.cron = backUpCron;
+				if(backUpCron != null) {
+					this.start();
+				}
+				isFutureTaskModifying.set(false);
+				log.error(CRON_CHANGE_FAIL_ERROR);
+				throw new ConcurrentModificationException(CRON_CHANGE_FAIL_ERROR);
+			}
 			isFutureTaskModifying.set(false);
 		} else {
 			log.error(CONCURRENT_CRON_SCHEDULER_ERROR);
