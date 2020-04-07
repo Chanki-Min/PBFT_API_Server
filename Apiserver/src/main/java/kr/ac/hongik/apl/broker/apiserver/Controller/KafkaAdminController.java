@@ -59,6 +59,8 @@ public class KafkaAdminController {
         return info.toString();
 	}
 
+	// TODO : /consumer 추가 하기.
+
     @PostMapping("/create/immediate")
     @ResponseBody
     public String create(@RequestBody TopicImmediateConsumerInfo info) throws ExecutionException, InterruptedException {
@@ -85,7 +87,7 @@ public class KafkaAdminController {
      *
      * @author 이혁수
      */
-    @PostMapping("/consumer/change/buf")
+    @PostMapping("/consumer/change/buffer")
     @ResponseBody
     public String changeBuffConsumer(@RequestBody TopicBufferConsumerInfo info) throws Exception {
             String topicName = info.getTopic();
@@ -93,7 +95,6 @@ public class KafkaAdminController {
                 statusService.deleteBufferStatus(topicName);
                 consumerDataService.consumerShutdown(topicName);
                 consumerDataService.deleteData(topicName);
-                topicAndConsumerCreationService.createTopic(info.toNewTopic(), info.toAdminConfigs());
                 topicAndConsumerCreationService.createBufferConsumer(info.toBufferConfigs());
                 log.info("Buffer Consumer has been changed");
                 return String.format("Buffer Consumer has been changed!");
